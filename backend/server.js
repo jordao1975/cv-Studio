@@ -24,6 +24,7 @@ const db = new sqlite3.Database('./cvstudio.db', (err) => {
   if (err) {
     console.error('Error opening database', err.message);
   } else {
+    console.log('Database connected successfully');
     db.run(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE,
@@ -53,76 +54,61 @@ const db = new sqlite3.Database('./cvstudio.db', (err) => {
   }
 });
 
-// Auth Routes
+// ========== HEALTH CHECK ==========
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'CV Studio Backend is running' });
+});
+
+// ========== AUTH ROUTES ==========
+app.post('/api/auth/register', (req, res) => {
+  const { email, password, name } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+  db.run('INSERT INTO users (email, name, password) VALUES (?, ?, ?)', [email, name || 'Utilizador', password], function(err) {
+    if (err) return res.status(500).json({ error: 'E-mail em uso.' });
+    const jwtToken = jwt.sign({ id: this.lastID, email }, SECRET_KEY, { expiresIn: '7d' });
+    res.json({ token: jwtToken, user: { id: this.lastID, email, name: name || 'Utilizador' } });
+  });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  db.get('SELECT * FROM users WHERE email = ? AND password = ?', [email, password], (err, user) => {
+    if (err || !user) return res.status(401).json({ error: 'Credenciais inválidas' });
+    const jwtToken = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: '7d' });
+    res.json({ token: jwtToken, user });
+  });
+});
+
 app.post('/api/auth/google', async (req, res) => {
   const { token } = req.body;
-  if (!token) return res.status(400).json({ error: 'Token missing' });
-
   try {
-    // Note: in a real app, verify the token against Google servers
-    // But since this is local testing sometimes we bypass or mock:
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const { sub, email, name, picture } = payload;
-
+    const ticket = await client.verifyIdToken({ idToken: token, audience: process.env.GOOGLE_CLIENT_ID });
+    const { sub, email, name, picture } = ticket.getPayload();
     db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
-      if (err) return res.status(500).json({ error: err.message });
-      
       if (user) {
         const jwtToken = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: '7d' });
-        return res.json({ token: jwtToken, user });
+        res.json({ token: jwtToken, user });
       } else {
         db.run('INSERT INTO users (email, name, google_id, picture) VALUES (?, ?, ?, ?)', [email, name, sub, picture], function(err) {
-          if (err) return res.status(500).json({ error: err.message });
-          const newUser = { id: this.lastID, email, name, picture };
-          const jwtToken = jwt.sign({ id: newUser.id, email }, SECRET_KEY, { expiresIn: '7d' });
-          res.json({ token: jwtToken, user: newUser });
+          const jwtToken = jwt.sign({ id: this.lastID, email }, SECRET_KEY, { expiresIn: '7d' });
+          res.json({ token: jwtToken, user: { id: this.lastID, email, name, picture } });
         });
       }
     });
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid Google token' });
-  }
+  } catch (error) { res.status(401).json({ error: 'Google auth failed' }); }
 });
 
-// Setup auth middleware
+// ========== AUTH MIDDLEWARE ==========
 const authenticate = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'No token provided' });
-  const token = authHeader.split(' ')[1];
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    req.user = decoded;
+    req.user = jwt.verify(token, SECRET_KEY);
     next();
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
+  } catch (err) { res.status(401).json({ error: 'Invalid token' }); }
 };
 
-// Configure Multer for file uploads (e.g. profile pictures)
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage: storage });
-
-app.post('/api/upload', authenticate, upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nenhum ficheiro enviado' });
-  }
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl });
-});
-
-// CV Routes
+// ========== CV ROUTES ==========
 app.get('/api/cvs', authenticate, (req, res) => {
   db.all('SELECT * FROM cvs WHERE user_id = ? ORDER BY updated_at DESC', [req.user.id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -144,142 +130,103 @@ app.put('/api/cvs/:id', authenticate, (req, res) => {
     [title, JSON.stringify(data), req.params.id, req.user.id], 
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: 'CV not found' });
       res.json({ success: true });
     }
   );
-});
-
-app.get('/api/cvs/:id', authenticate, (req, res) => {
-  db.get('SELECT * FROM cvs WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'CV not found' });
-    res.json({ ...row, data: JSON.parse(row.data) });
-  });
 });
 
 app.delete('/api/cvs/:id', authenticate, (req, res) => {
   db.run('DELETE FROM cvs WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'CV not found' });
     res.json({ success: true });
   });
 });
 
-// Cover Letter Routes
-app.get('/api/cover-letters', authenticate, (req, res) => {
+// ========== COVER LETTER ROUTES ==========
+app.get('/api/letters', authenticate, (req, res) => {
   db.all('SELECT * FROM cover_letters WHERE user_id = ? ORDER BY created_at DESC', [req.user.id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(rows.map(row => {
-      try { return { ...row, content: JSON.parse(row.content) }; } 
-      catch { return row; }
-    }));
+    res.json(rows.map(row => ({ ...row, content: JSON.parse(row.content) })));
   });
 });
 
-app.get('/api/cover-letters/:id', authenticate, (req, res) => {
-  db.get('SELECT * FROM cover_letters WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'Cover letter not found' });
-    try {
-      res.json({ ...row, content: JSON.parse(row.content) });
-    } catch {
-      res.json(row);
-    }
-  });
-});
-
-app.post('/api/cover-letters', authenticate, (req, res) => {
+app.post('/api/letters', authenticate, (req, res) => {
   const { title, content } = req.body;
-  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
-  db.run('INSERT INTO cover_letters (user_id, title, content) VALUES (?, ?, ?)', [req.user.id, title, contentStr], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID, title, content });
-  });
-});
-
-app.put('/api/cover-letters/:id', authenticate, (req, res) => {
-  const { title, content } = req.body;
-  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
-  db.run('UPDATE cover_letters SET title = ?, content = ? WHERE id = ? AND user_id = ?', 
-    [title, contentStr, req.params.id, req.user.id], 
+  db.run('INSERT INTO cover_letters (user_id, title, content) VALUES (?, ?, ?)', 
+    [req.user.id, title, JSON.stringify(content)], 
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: 'Cover letter not found' });
-      res.json({ success: true });
+      res.json({ id: this.lastID, title, content });
     }
   );
 });
 
-app.delete('/api/cover-letters/:id', authenticate, (req, res) => {
+app.delete('/api/letters/:id', authenticate, (req, res) => {
   db.run('DELETE FROM cover_letters WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'Cover letter not found' });
     res.json({ success: true });
   });
 });
 
-// AI Routes (Integração com Anthropic)
-app.post('/api/ai/chat', authenticate, async (req, res) => {
-  try {
-    const { historicoConversa } = req.body;
-    if (!historicoConversa || !Array.isArray(historicoConversa)) {
-      return res.status(400).json({ error: 'historicoConversa é obrigatório e deve ser um array.' });
-    }
-    const prompt = buildChatPrompt(historicoConversa);
-    const response = await chamarIA(prompt);
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/letters/:id', authenticate, (req, res) => {
+  db.get('SELECT * FROM cover_letters WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Letter not found' });
+    res.json({ ...row, content: JSON.parse(row.content) });
+  });
 });
 
-app.post('/api/ai/profile', authenticate, async (req, res) => {
+// ========== AI ROUTES ==========
+app.post('/api/ai/review', authenticate, async (req, res) => {
   try {
-    const { dados } = req.body;
-    const prompt = buildProfilePrompt(dados);
-    const response = await chamarIA(prompt);
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/ai/generate-cv', authenticate, async (req, res) => {
-  try {
-    const { dados, vaga } = req.body;
-    const prompt = buildCVPrompt(dados, vaga);
-    const cvJson = await chamarIA(prompt);
-    res.json(cvJson);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    const { cvGerado } = req.body;
+    const stringData = JSON.stringify(cvGerado, null, 2);
+    const prompt = buildReviewPrompt(stringData);
+    const reviewResult = await chamarIA(prompt);
+    res.json(reviewResult);
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/ai/generate-cover-letter', authenticate, async (req, res) => {
   try {
     const { dados, vaga, empresa } = req.body;
+    console.log(`[AI] Generating Letter for: ${empresa || 'Candidatura'}`);
+    
+    if (!dados) return res.status(400).json({ error: 'Dados do CV ou Perfil são necessários.' });
+    
     const prompt = buildCartaPrompt(dados, vaga, empresa);
     const result = await chamarIA(prompt);
+    
+    console.log(`[AI] Generation Success`);
     res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (error) { 
+    console.error(`[AI ERROR] Letter Generation:`, error.message);
+    res.status(500).json({ error: `IA falhou ao redigir: ${error.message}` }); 
   }
 });
 
-app.post('/api/ai/review', authenticate, async (req, res) => {
+app.post('/api/ai/import', authenticate, async (req, res) => {
   try {
-    const { cvGerado } = req.body;
-    // Se o frontend enviar formato objeto, passamos para string
-    const stringData = typeof cvGerado === 'string' ? cvGerado : JSON.stringify(cvGerado, null, 2);
-    const prompt = buildReviewPrompt(stringData);
-    const reviewResult = await chamarIA(prompt);
-    res.json(reviewResult);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    const { text, autoSummary } = req.body;
+    if (!text) return res.status(400).json({ error: 'Texto é obrigatório' });
+    const prompt = `Você é um perito em Recursos Humanos. Estruture este texto de CV em JSON estrito.
+${autoSummary ? 'Crie um resumo profissional de 3 frases no campo "summary".' : ''}
+ESTRUTURA: {
+  "name": "", "title": "", "email": "", "phone": "", "location": "", "linkedin": "", "summary": "",
+  "experiences": [{"role": "", "company": "", "period": "", "desc": ""}],
+  "educations": [{"degree": "", "institution": "", "period": ""}],
+  "courses": [{"name": "", "institution": "", "year": ""}],
+  "skills": [],
+  "languages": [{"name": "", "level": ""}]
+}
+TEXTO: ${text}`;
+    const result = await chamarIA(prompt);
+    res.json(result);
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// ========== START SERVER ==========
 app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+  console.log(`=== CV Studio Backend ===`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

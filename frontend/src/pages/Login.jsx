@@ -27,14 +27,19 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      // MOCK: in a full implementation, add register/login local routes
-      sessionStorage.setItem('token', 'local-jwt-token');
-      sessionStorage.setItem('user', JSON.stringify({ email, name: name || 'Utilizador' }));
+      const payload = isRegister ? { email, password, name } : { email, password };
+      
+      const res = await axios.post(`${BASE_URL}${endpoint}`, payload);
+      
+      sessionStorage.setItem('token', res.data.token);
+      sessionStorage.setItem('user', JSON.stringify(res.data.user));
       navigate('/');
     } catch (err) {
-      setError('Erro na autenticação local.');
+      setError(err.response?.data?.error || 'Erro na autenticação.');
     }
   };
 

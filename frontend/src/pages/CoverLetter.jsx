@@ -1,194 +1,183 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Briefcase, Wand2, Printer, ChevronLeft, Building2 } from 'lucide-react';
+import { FileText, Briefcase, Wand2, Printer, ChevronLeft, Building2, UserCircle2, Sparkles, Download, Save, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 const CoverLetter = () => {
   const navigate = useNavigate();
+  const [cvs, setCvs] = useState([]);
+  const [selectedCvId, setSelectedCvId] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [cvText, setCvText] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [letterContent, setLetterContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null);
+
+  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } });
+
+  useEffect(() => {
+    const fetchCvs = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/cvs`, getAuthHeaders());
+        setCvs(res.data);
+      } catch (err) {
+        console.error('Failed to load CVs:', err);
+      }
+    };
+    fetchCvs();
+  }, []);
 
   const handleGenerate = async () => {
-    if (!jobDescription || !cvText) {
-      setError('Por favor, preencha a vaga e o seu resumo profissional (CV).');
+    if (!jobDescription) {
+      setError('Descreva a vaga para gerar a carta.');
       return;
     }
     setLoading(true);
     setError(null);
+    setSaveStatus(null);
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const token = sessionStorage.getItem('token');
-      
+      const selectedCv = cvs.find(c => String(c.id) === String(selectedCvId));
+      const cvContext = selectedCv ? JSON.stringify(selectedCv.data) : "Profissional";
+
       const res = await axios.post(`${BASE_URL}/api/ai/generate-cover-letter`, { 
-        dados: cvText, 
+        dados: cvContext, 
         vaga: jobDescription,
         empresa: companyName
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      }, getAuthHeaders());
       
-      // A API devolve o JSON perfeitamente estruturado graças a "buildCartaPrompt"
       setLetterContent(res.data);
     } catch (err) {
       console.error(err);
-      setError('Erro ao comunicar com a IA. Tente iniciar o servidor Backend ou verificar a chave API.');
+      setError('IA falhou ao redigir. Verifique a conexão com o servidor.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = () => window.print();
+
+  const handleSave = async () => {
+    if (!letterContent) return;
+    try {
+      await axios.post(`${BASE_URL}/api/letters`, {
+        title: `Carta para ${companyName || 'Candidatura'}`,
+        content: letterContent
+      }, getAuthHeaders());
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setSaveStatus('error');
+    }
   };
 
-  const inputStyle = {
-    width: '100%',
-    background: 'var(--bg-base)',
-    border: '1px solid var(--border-strong)',
-    color: 'var(--text-primary)',
-    padding: '16px',
-    borderRadius: '12px',
-    outline: 'none',
-    fontSize: '14px',
-    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-  };
-
-  const labelStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    marginBottom: '8px',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px'
-  };
+  const cardStyle = { background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' };
+  const inputStyle = { width: '100%', background: '#fff', border: '1px solid #e2e8f0', color: '#1e293b', padding: '12px', borderRadius: '10px', outline: 'none', fontSize: '14px' };
+  const labelStyle = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' };
 
   return (
-    <div className="mobile-flex-col" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+    <div style={{ background: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#1e293b' }}>
       
-      {/* LATERAL EDITOR PANEL */}
-      <div className="glass-panel mobile-full-width" style={{ width: '450px', maxWidth: '100%', display: 'flex', flexDirection: 'column', zIndex: 10, margin: '20px', padding: '0', borderRadius: '24px', overflow: 'hidden' }}>
-        
-        {/* HEADER */}
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '0', fontSize: '14px', fontWeight: 'bold', marginBottom: '16px' }}>
-            <ChevronLeft size={18} /> Voltar ao Dashboard
-          </button>
-          <h2 className="outfit gradient-text" style={{ fontSize: '24px', margin: 0 }}>Gerador de Cartas</h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.5' }}>
-            A Nossa IA cruza o seu perfil profissional com os requisitos da vaga para criar cartas perfeitamente alinhadas e persuasivas usando tom formal exigido no mercado.
-          </p>
-        </div>
-
-        {/* BODY */}
-        <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+      {/* HEADER */}
+      <div style={{ background: '#fff', height: '70px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 40px' }}>
           
-          <div style={{ marginBottom: '24px' }}>
-            <label style={labelStyle}><Building2 size={16} /> Empresa Alvo (Opcional)</label>
-            <input 
-              type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
-              style={inputStyle}
-              placeholder="ex: Moza Banco, Vodacom..."
-            />
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => navigate('/')} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+              <ChevronLeft size={16} /> Voltar ao Painel
+            </button>
+            <div style={{ background: '#f8fafc', color: '#64748b', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              <FileText size={16} /> Gerador de Cartas
+            </div>
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={labelStyle}><Briefcase size={16} /> Descrição da Vaga / Requisitos</label>
-            <textarea 
-              value={jobDescription} onChange={e => setJobDescription(e.target.value)}
-              style={{ ...inputStyle, height: '140px', resize: 'vertical' }}
-              placeholder="Cole aqui o anúncio de emprego... ex: 'Procuramos um Gestor de TI com 5 anos de experiência...'"
-            />
+          {/* LOGO */}
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontWeight: '900', fontSize: '28px', color: '#000' }}>
+            IA
           </div>
 
-          <div style={{ marginBottom: '40px' }}>
-            <label style={labelStyle}><FileText size={16} /> O seu Perfil Base (ou CV copiado)</label>
-            <textarea 
-              value={cvText} onChange={e => setCvText(e.target.value)}
-              style={{ ...inputStyle, height: '200px', resize: 'vertical' }}
-              placeholder="Resuma a sua experiência ou cole o texto inteiro do seu Currículo para a IA analisar..."
-            />
+          <div style={{ display: 'flex', gap: '10px' }}>
+             {letterContent && (
+               <>
+                 <button onClick={handleSave} style={{ background: saveStatus === 'success' ? '#10b981' : '#fff', color: saveStatus === 'success' ? '#fff' : '#1e293b', border: '1px solid #e2e8f0', padding: '8px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
+                   {saveStatus === 'success' ? 'Guardado' : 'Salvar'}
+                 </button>
+                 <button onClick={handlePrint} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+                   Baixar PDF
+                 </button>
+               </>
+             )}
           </div>
-
-          {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '16px', borderRadius: '12px', fontSize: '13px', marginBottom: '24px' }}>{error}</div>}
-
-          <button 
-            onClick={handleGenerate} 
-            disabled={loading}
-            className="btn-primary"
-            style={{ width: '100%', padding: '16px', fontSize: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? 'A Escrever com IA...' : <><Wand2 size={18} /> Redigir Carta Impecável</>}
-          </button>
         </div>
       </div>
 
-      {/* RENDER PANEL */}
-      <div className="mobile-p-20" style={{ flex: 1, padding: '40px', display: 'flex', justifyContent: 'center', overflowY: 'auto', position: 'relative' }}>
+      <div style={{ display: 'flex', flex: 1, justifyContent: 'center', gap: '40px', padding: '40px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         
-        {/* Background Accents */}
-        <div style={{ position: 'absolute', top: '10%', right: '10%', width: '400px', height: '400px', background: 'var(--accent-glow)', filter: 'blur(100px)', borderRadius: '50%', zIndex: 0, opacity: 0.3, pointerEvents: 'none' }}></div>
+        {/* PARAMS */}
+        <div style={{ width: '400px', flexShrink: 0 }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '24px' }}>Parâmetros de Geração</h1>
 
-        <div style={{ width: '100%', maxWidth: '800px', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-          
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-             {letterContent && (
-               <button onClick={handlePrint} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                 <Printer size={18} /> Baixar / Imprimir PDF
-               </button>
-             )}
+          <div style={cardStyle}>
+            <label style={labelStyle}><UserCircle2 size={16} /> Perfil Profissional</label>
+            <select value={selectedCvId} onChange={e => setSelectedCvId(e.target.value)} style={inputStyle}>
+              <option value="">-- Selecione o CV Base --</option>
+              {cvs.map(cv => <option key={cv.id} value={cv.id}>{cv.title || 'Curriculum'}</option>)}
+            </select>
           </div>
 
-          {/* DOCUMENT PAPER */}
-          <div className="printable-document mobile-doc-padding" style={{ background: '#ffffff', color: '#111827', padding: '80px 100px', borderRadius: '8px', minHeight: '1000px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative' }}>
+          <div style={cardStyle}>
+            <label style={labelStyle}><Building2 size={16} /> Empresa de Destino</label>
+            <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} style={inputStyle} placeholder="ex: Movitel" />
+          </div>
+
+          <div style={cardStyle}>
+            <label style={labelStyle}><Briefcase size={16} /> Requisitos da Vaga</label>
+            <textarea value={jobDescription} onChange={e => setJobDescription(e.target.value)} style={{ ...inputStyle, height: '140px', resize: 'none' }} placeholder="Descreva a vaga..." />
+          </div>
+
+          {error && <div style={{ color: '#ef4444', fontSize: '12px', marginBottom: '16px' }}>{error}</div>}
+
+          <button onClick={handleGenerate} disabled={loading} style={{ width: '100%', padding: '16px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>
+            {loading ? 'Redigindo...' : 'Gerar Carta com IA'}
+          </button>
+        </div>
+
+        {/* PAPER */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div className="printable-document" style={{ background: '#fff', width: '100%', minHeight: '1000px', padding: '80px 100px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', position: 'relative' }}>
             {!letterContent ? (
-              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexDirection: 'column', textAlign: 'center' }}>
-                <div style={{ background: '#f3f4f6', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
-                  <Wand2 size={32} color="#9ca3af" />
-                </div>
-                <h3 style={{ fontSize: '20px', color: '#4b5563', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>Folha em Branco</h3>
-                <p style={{ maxWidth: '300px', lineHeight: '1.6' }}>Preencha os campos à esquerda e a sua carta de apresentação corporativa ganhará forma aqui.</p>
+              <div style={{ height: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                <Wand2 size={48} style={{ marginBottom: '24px', opacity: 0.2 }} />
+                <h2 style={{ fontSize: '24px', color: '#1e293b', fontWeight: '800' }}>Documento em Rascunho</h2>
               </div>
             ) : (
-              <div style={{ lineHeight: '1.8', fontSize: '15px', fontFamily: '"Georgia", serif' }}>
-                <p style={{ textAlign: 'right', marginBottom: '40px', color: '#4b5563' }}>
-                  {new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-
-                <p style={{ fontWeight: 'bold', marginBottom: '24px', fontSize: '16px' }}>
-                  Assunto: {letterContent.assunto || 'Candidatura'}
-                </p>
-
-                <p style={{ marginBottom: '24px' }}>
-                  {letterContent.saudacao || 'Exmo.(a) Senhor(a),'}
-                </p>
-
-                <p style={{ marginBottom: '16px', textAlign: 'justify' }}>
-                  {letterContent.paragrafo1}
-                </p>
-                
-                <p style={{ marginBottom: '16px', textAlign: 'justify' }}>
-                  {letterContent.paragrafo2}
-                </p>
-
-                <p style={{ marginBottom: '32px', textAlign: 'justify' }}>
-                  {letterContent.paragrafo3}
-                </p>
-
-                <p style={{ marginBottom: '16px' }}>
-                  {letterContent.encerramento || 'Com os melhores cumprimentos,'}
-                </p>
-                <p style={{ fontWeight: 'bold' }}>
-                  {letterContent.nome || '[Seu Nome]'}
-                </p>
+              <div style={{ lineHeight: '1.7', fontSize: '16px', fontFamily: '"Playfair Display", serif', color: '#1e293b' }}>
+                 <div style={{ marginBottom: '60px', borderBottom: '3px solid #000', paddingBottom: '30px' }}>
+                    <h1 style={{ margin: 0, fontSize: '38px', fontWeight: '900' }}>{letterContent.nome}</h1>
+                 </div>
+                 <p style={{ textAlign: 'right', marginBottom: '32px' }}>{new Date().toLocaleDateString('pt-PT')}</p>
+                 <div style={{ marginBottom: '40px' }}>
+                    <p style={{ fontWeight: 'bold', margin:0 }}>Departamento de Seleção</p>
+                    <p style={{ color: '#64748b', margin:0 }}>{companyName}</p>
+                 </div>
+                 <p style={{ fontWeight: '900', padding: '12px 16px', background: '#f8fafc', borderLeft: '4px solid #000', marginBottom: '32px' }}>
+                    ASSUNTO: {letterContent.assunto}
+                 </p>
+                 <p style={{ fontWeight: 'bold', marginBottom: '24px' }}>{letterContent.saudacao}</p>
+                 <div style={{ textAlign: 'justify', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <p>{letterContent.paragrafo1}</p>
+                    <p>{letterContent.paragrafo2}</p>
+                    <p>{letterContent.paragrafo3}</p>
+                 </div>
+                 <div style={{ marginTop: '60px' }}>
+                    <p style={{ marginBottom: '40px' }}>{letterContent.encerramento}</p>
+                    <p style={{ fontWeight: '900', fontSize: '20px' }}>{letterContent.nome}</p>
+                 </div>
               </div>
             )}
+            {!letterContent && <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(3px)', zIndex: 0 }}></div>}
           </div>
         </div>
       </div>
@@ -197,19 +186,7 @@ const CoverLetter = () => {
         @media print {
           body * { visibility: hidden; }
           .printable-document, .printable-document * { visibility: visible; }
-          .printable-document { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border-radius: 0; padding: 0 !important; background: transparent; }
-          @page { margin: 2cm; }
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
-
-        @media (max-width: 768px) {
-          .mobile-doc-padding {
-            padding: 30px 20px !important;
-            min-height: auto !important;
-          }
+          .printable-document { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border:none !important; padding: 0 !important; }
         }
       `}</style>
     </div>

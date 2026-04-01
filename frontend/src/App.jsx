@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CVBuilder from './pages/CVBuilder';
 import CoverLetter from './pages/CoverLetter';
+import LetterView from './pages/LetterView';
 import Layout from './components/Layout';
 
 const ProtectedRoute = ({ children }) => {
@@ -37,6 +38,11 @@ function App() {
             <Route path="/cover-letter" element={
               <ProtectedRoute>
                 <CoverLetter />
+              </ProtectedRoute>
+            } />
+            <Route path="/letter/:id" element={
+              <ProtectedRoute>
+                <LetterView />
               </ProtectedRoute>
             } />
           </Routes>

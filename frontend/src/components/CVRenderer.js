@@ -1,5 +1,5 @@
 export const renderCV = (templateId, data, lang = 'pt') => {
-  const { name, title, email, phone, location, linkedin, summary, photo, nacionalidade, dataNascimento, estadoCivil, bi } = data;
+  const { name, title, email, phone, location, linkedin, summary, photo, nacionalidade, dataNascimento, estadoCivil, bi, nuit } = data;
   const experiences = data.experiences || [];
   const educations = data.educations || [];
   const courses = data.courses || [];
@@ -7,6 +7,8 @@ export const renderCV = (templateId, data, lang = 'pt') => {
   const skills = data.skills || [];
 
   const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  
+  const docs = [nacionalidade ? `Nac: ${esc(nacionalidade)}` : '', bi ? `B.I.: ${esc(bi)}` : '', nuit ? `NUIT: ${esc(nuit)}` : ''].filter(Boolean);
   const np = (name||'').trim().split(' ');
   const last = np.length > 1 ? np.pop() : '';
   const first = np.join(' ');
@@ -59,7 +61,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
         ${avatarHtml}
         <div class="header-txt">
           <div class="cv-name">${esc(name)||'Seu Nome'}</div><div class="cv-title">${esc(title)||'Cargo Profissional'}</div>
-          <div class="cv-contact">${[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
+          <div class="cv-contact">${[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
         </div>
       </div>
     </div>
@@ -80,7 +82,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
         ${avatarHtml}
         <div class="header-txt">
           <div class="cv-name">${esc(name)||'Seu Nome'}</div><div class="cv-title">${esc(title)||'Cargo'}</div>
-          <div class="cv-contact">${[esc(email),esc(phone),esc(location)].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
+          <div class="cv-contact">${[esc(email),esc(phone),esc(location),...docs].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
         </div>
       </div>
     </div>
@@ -95,7 +97,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
     </div></div>`;
   }
   else if (templateId === 3) {
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideSkills=skills.map(s=>`<span class="t3-badge">${esc(s)}</span>`).join('');
     const sideLangs=languages.map(l=>`<div class="t3-lang"><span>${esc(l.name)}</span><span class="t3-lang-lv">${esc(l.level)}</span></div>`).join('');
     
@@ -195,7 +197,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
         ${avatarHtml}
         <div class="header-txt">
           <div class="cv-name">${esc(name)||'Seu Nome'}</div><div class="cv-title">${esc(title)||'Cargo'}</div>
-          <div class="cv-contact">${[esc(email),esc(phone),esc(location)].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
+          <div class="cv-contact">${[esc(email),esc(phone),esc(location),...docs].filter(Boolean).map(i=>`<span>${i}</span>`).join('')}</div>
         </div>
       </div>
     </div>
@@ -211,7 +213,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
   }
   else if (templateId === 5) {
     const chips=skills.map(s=>`<span class="skill-chip">${s}</span>`).join('');
-    const contacts=[esc(email),esc(phone),esc(location)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),...docs].filter(Boolean);
     innerHTML = `<div class="cv-header">
       <div class="header-inner">
         ${avatarHtml}
@@ -242,7 +244,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
       <aside class="t6-side">
         <div class="t6-avatar" style="overflow:hidden;">${avatarInner}</div>
         <div class="t6-side-sec"><div class="t6-side-label"></div><div class="t6-side-rule"></div>
-          ${[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean).map(c=>`<div class="t6-contact-line">${c}</div>`).join('')}
+          ${[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean).map(c=>`<div class="t6-contact-line">${c}</div>`).join('')}
         </div>
         ${langSide?`<div class="t6-side-sec"><div class="t6-side-label"></div><div class="t6-side-rule"></div>${langSide}</div>`:''}
         ${skillBars?`<div class="t6-side-sec"><div class="t6-side-label"></div><div class="t6-side-rule"></div>${skillBars}</div>`:''}
@@ -260,7 +262,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
   }
   else if (templateId === 7) {
     const avatarInner = photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;">` : initials;
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideLangs=languages.map(l=>`<div class="t7-lang-row"><span>${esc(l.name)}</span><span class="t7-lang-lv">${esc(l.level)}</span></div>`).join('');
     const sideSkills=skills.map(s=>`<span class="t7-skill-tag">${esc(s)}</span>`).join('');
     const expMain=experiences.map(e=>`<div class="t7-eduwrap"><div class="t7-edudot"></div><div><div class="t7-exp-role">${esc(e.role)||'Cargo'}</div><div class="t7-exp-co">${esc(e.company)}</div>${e.period?`<div class="t7-edu-date" style="margin-top:2px">${esc(e.period)}</div>`:''}${e.desc?`<div class="t7-exp-desc">${esc(e.desc)}</div>`:''}</div></div>`).join('');
@@ -310,7 +312,8 @@ export const renderCV = (templateId, data, lang = 'pt') => {
             ${dataNascimento?`<tr><td style="font-weight:bold;">Data de Nasc.:</td><td>${esc(dataNascimento)}</td></tr>`:''}
             ${nacionalidade?`<tr><td style="font-weight:bold;">Nacionalidade:</td><td>${esc(nacionalidade)}</td></tr>`:''}
             ${estadoCivil?`<tr><td style="font-weight:bold;">Estado Civil:</td><td>${esc(estadoCivil)}</td></tr>`:''}
-            ${bi?`<tr><td style="font-weight:bold;">B.I. / NUIT:</td><td>${esc(bi)}</td></tr>`:''}
+            ${bi?`<tr><td style="font-weight:bold;">B.I.:</td><td>${esc(bi)}</td></tr>`:''}
+            ${nuit?`<tr><td style="font-weight:bold;">NUIT:</td><td>${esc(nuit)}</td></tr>`:''}
             <tr><td style="font-weight:bold;">Endereço:</td><td>${esc(location)}</td></tr>
             <tr><td style="font-weight:bold;">Contacto:</td><td>${esc(phone)}</td></tr>
             <tr><td style="font-weight:bold;">E-mail:</td><td>${esc(email)}</td></tr>
@@ -368,7 +371,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
   }
   else if (templateId === 9) {
     const avatarInner = photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;">` : initials;
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideLangs=languages.map(l=>`<div class="t9-lang-row"><span>${esc(l.name)}</span><span class="t9-lang-lv">${esc(l.level)}</span></div>`).join('');
     const sideSkills=skills.map(s=>`<div class="t9-skill-item">${esc(s)}</div>`).join('');
     const expMain=experiences.map(e=>`<div class="t9-item-wrap"><div class="t9-item-date">${esc(e.period).replace('—','<br>')}</div><div class="t9-item-body"><div class="t9-role">${esc(e.role)||'Cargo'}</div><div class="t9-co">${esc(e.company)}</div>${e.desc?`<div class="t9-desc">${esc(e.desc)}</div>`:''}</div></div>`).join('');
@@ -395,7 +398,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
   }
   else if (templateId === 10) {
     const avatarInner = photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;">` : initials;
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideLangs=languages.map(l=>`<div class="t10-lang-row"><span>${esc(l.name)}</span><span class="t10-lang-lv">${esc(l.level)}</span></div>`).join('');
     const sideSkills=skills.map(s=>`<div class="t10-skill-pill">${esc(s)}</div>`).join('');
     const expMain=experiences.map(e=>`<div class="t10-card"><div class="t10-c-head"><div class="t10-role">${esc(e.role)||'Cargo'}</div><div class="t10-date">${esc(e.period)}</div></div><div class="t10-co">${esc(e.company)}</div>${e.desc?`<div class="t10-desc">${esc(e.desc)}</div>`:''}</div>`).join('');
@@ -429,7 +432,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
 
   else if (templateId === 11) {
     const avatarInner = photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;">` : initials;
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideSkills=skills.map(s=>`<div class="t11-skill">${esc(s)}</div>`).join('');
     const sideLangs=languages.map(l=>`<div class="t11-lang"><span>${esc(l.name)}</span><span>${esc(l.level)}</span></div>`).join('');
     const expMain=experiences.map(e=>`<div class="t11-item"><div class="t11-item-title">${esc(e.role)||'Cargo'}</div><div class="t11-item-sub">${esc(e.company)} | ${esc(e.period)}</div>${e.desc?`<div class="t11-item-desc">${esc(e.desc)}</div>`:''}</div>`).join('');
@@ -452,7 +455,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
     </div>`;
   }
   else if (templateId === 12) {
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideSkills=skills.join(', ');
     const sideLangs=languages.map(l=>`${esc(l.name)} (${esc(l.level)})`).join('<br>');
     const expMain=experiences.map(e=>`<div class="t12-item"><div class="t12-date">${esc(e.period)}</div><div class="t12-content"><div class="t12-role">${esc(e.role)||'Cargo'}</div><div class="t12-co">${esc(e.company)}</div>${e.desc?`<div class="t12-desc">${esc(e.desc)}</div>`:''}</div></div>`).join('');
@@ -469,6 +472,9 @@ export const renderCV = (templateId, data, lang = 'pt') => {
             ${phone?`<tr><td class="t12-td-label">Phone</td><td>${esc(phone)}</td></tr>`:''}
             ${email?`<tr><td class="t12-td-label">Email</td><td>${esc(email)}</td></tr>`:''}
             ${linkedin?`<tr><td class="t12-td-label">LinkedIn</td><td>${esc(linkedin)}</td></tr>`:''}
+            ${nacionalidade?`<tr><td class="t12-td-label">Nac.</td><td>${esc(nacionalidade)}</td></tr>`:''}
+            ${bi?`<tr><td class="t12-td-label">B.I.</td><td>${esc(bi)}</td></tr>`:''}
+            ${nuit?`<tr><td class="t12-td-label">NUIT</td><td>${esc(nuit)}</td></tr>`:''}
           </table>
         </div>
       </div>
@@ -484,7 +490,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
     </div>`;
   }
   else if (templateId === 13) {
-    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin)].filter(Boolean);
+    const contacts=[esc(email),esc(phone),esc(location),esc(linkedin),...docs].filter(Boolean);
     const sideSkills=skills.map(s=>`<div class="t13-skill">${esc(s)}</div>`).join('');
     const sideLangs=languages.map(l=>`<div class="t13-lang"><span>${esc(l.name)}</span><span>${esc(l.level)}</span></div>`).join('');
     const expMain=experiences.map(e=>`<div class="t13-item"><div class="t13-date">${esc(e.period).replace('—','-')}</div><div class="t13-content"><div class="t13-role">${esc(e.role)||'Cargo'}</div><div class="t13-co">${esc(e.company)}</div>${e.desc?`<div class="t13-desc">${esc(e.desc)}</div>`:''}</div></div>`).join('');
@@ -499,7 +505,7 @@ export const renderCV = (templateId, data, lang = 'pt') => {
           <div class="t13-section"><div class="t13-sec-title">${t.details.toUpperCase()}</div>
             <div class="t13-name">${esc(name)||'Seu Nome'}</div>
             <div class="t13-address">${esc(location)}</div>
-            <div class="t13-contact-box">${[esc(phone), esc(email), esc(linkedin)].filter(Boolean).map(c=>`<div class="t13-contact">${c}</div>`).join('')}</div>
+            <div class="t13-contact-box">${[esc(phone), esc(email), ...docs, esc(linkedin)].filter(Boolean).map(c=>`<div class="t13-contact">${c}</div>`).join('')}</div>
           </div>
           ${sideSkills?`<div class="t13-section"><div class="t13-sec-title">${t.skills.toUpperCase()}</div><div class="t13-skills-bx">${sideSkills}</div></div>`:''}
           ${sideLangs?`<div class="t13-section"><div class="t13-sec-title">${t.languages.toUpperCase()}</div>${sideLangs}</div>`:''}

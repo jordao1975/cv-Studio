@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
 :root {
   /* LIGHT MODE PALETTE - Premium Clean */
@@ -165,6 +165,17 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-base);
+  border-color: var(--text-tertiary);
+}
+
+.btn-delete-hover:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  transform: scale(1.1);
+  color: #dc2626 !important;
 }
 /* --- APP LAYOUT (STABLE NAV) --- */
 .app-shell {
@@ -429,15 +440,31 @@ code {
     print-color-adjust: exact !important;
   }
 
-  /* Hide UI elements specifically */
+  /* NUCLEAR: Hide absolutely everything that is not the print area */
+  body > *:not(#root),
+  .sidebar,
+  .bottom-nav,
+  nav.bottom-nav,
+  aside.sidebar,
+  aside,
   .mobile-main-wrapper,
   .mobile-preview-overlay,
-  .mobile-import-overlay {
+  .mobile-import-overlay,
+  .cv-builder-root > *:not(#print-area),
+  .app-shell > aside,
+  .app-shell > nav,
+  .app-shell > .main-content > * > .mobile-main-wrapper {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
   }
 
   /* Reset layout constraints to allow full-page rendering without clipping */
-  html, body, #root, .cv-builder-root {
+  html, body, #root, .app-shell, .main-content, .cv-builder-root {
     display: block !important;
     height: auto !important;
     min-height: auto !important;
@@ -447,12 +474,17 @@ code {
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
+    width: 100% !important;
   }
 
+  /* Force the print area to show */
   #print-area {
     display: block !important;
+    visibility: visible !important;
     position: relative !important;
-    width: 100%;
+    width: 100% !important;
+    height: auto !important;
+    left: auto !important;
     margin: 0;
     padding: 0;
     overflow: visible !important;

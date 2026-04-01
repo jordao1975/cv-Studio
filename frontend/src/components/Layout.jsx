@@ -18,8 +18,13 @@ const Layout = ({ children }) => {
     navigate('/login');
   };
 
-  // No Layout for Login page
-  if (location.pathname === '/login') return children;
+  // No Sidebar for Login, CV Builder or Cover Letter (Full Screen Apps)
+  const isFullScreenPage = location.pathname === '/login' || 
+                           location.pathname.startsWith('/cv/') || 
+                           location.pathname.startsWith('/letter/') ||
+                           location.pathname === '/cover-letter';
+
+  if (isFullScreenPage) return children;
 
   return (
     <div className="app-shell">
