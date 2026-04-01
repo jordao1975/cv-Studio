@@ -81,7 +81,7 @@ const CoverLetter = () => {
     <div style={{ background: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#1e293b' }}>
       
       {/* HEADER */}
-      <div style={{ background: '#fff', height: '70px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div className="no-print" style={{ background: '#fff', height: '70px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 40px' }}>
           
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -184,9 +184,28 @@ const CoverLetter = () => {
 
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          .printable-document, .printable-document * { visibility: visible; }
-          .printable-document { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border:none !important; padding: 0 !important; }
+          @page { size: auto; margin: 0; }
+          body { margin: 0; background: #fff !important; }
+          .no-print, .no-print * { display: none !important; opacity: 0 !important; visibility: hidden !important; }
+          .cover-letter-studio { background: #fff !important; }
+          .printable-document, .printable-document * { 
+            visibility: visible !important; 
+            color: #000 !important; 
+            opacity: 1 !important; 
+            display: block;
+          }
+          .printable-document { 
+            position: fixed !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 210mm !important; 
+            height: auto !important;
+            padding: 2.5cm !important; 
+            box-shadow: none !important; 
+            border: none !important; 
+            background: #fff !important;
+            transform: none !important;
+          }
         }
       `}</style>
     </div>
