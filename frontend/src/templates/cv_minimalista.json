@@ -1,0 +1,25 @@
+{
+  "id": "model_g",
+  "name": "Saúde/Farmácia Liso",
+  "layout": {
+    "type": "topbar-sidebar",
+    "sidebarPosition": "right",
+    "sidebarWidth": "30%"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#475569",
+      "topbarBg": "#475569",
+      "textMain": "#334155",
+      "sidebarBg": "#f8fafc",
+      "sidebarText": "#475569",
+      "sidebarTitle": "#475569"
+    },
+    "font": "'Inter', Arial, sans-serif"
+  },
+  "structure": {
+    "topbar": ["photo", "header", "contact"],
+    "main": ["experience", "education", "courses"],
+    "sidebar": ["summary", "skills", "languages"]
+  }
+}

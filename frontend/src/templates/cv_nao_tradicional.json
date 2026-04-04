@@ -1,0 +1,25 @@
+{
+  "id": "model_f",
+  "name": "Criativo Curvo NT",
+  "layout": {
+    "type": "topbar-sidebar",
+    "sidebarPosition": "left",
+    "sidebarWidth": "35%"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#0d9488",
+      "topbarBg": "#0d9488",
+      "textMain": "#334155",
+      "sidebarBg": "#f0fdfa",
+      "sidebarText": "#0f766e",
+      "sidebarTitle": "#0d9488"
+    },
+    "font": "'Montserrat', sans-serif"
+  },
+  "structure": {
+    "topbar": ["header", "contact"],
+    "sidebar": ["education", "courses", "skills", "languages"],
+    "main": ["summary", "experience"]
+  }
+}

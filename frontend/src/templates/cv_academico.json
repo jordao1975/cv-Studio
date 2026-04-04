@@ -1,0 +1,24 @@
+{
+  "id": "model_e",
+  "name": "Engenharia Marinho",
+  "layout": {
+    "type": "two-column",
+    "sidebarPosition": "left",
+    "sidebarWidth": "33%"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#1e3a8a",
+      "textHeader": "#1e3a8a",
+      "textMain": "#1e293b",
+      "sidebarBg": "#1e3a8a",
+      "sidebarText": "#bfdbfe",
+      "sidebarTitle": "#ffffff"
+    },
+    "font": "'Roboto', sans-serif"
+  },
+  "structure": {
+    "sidebar": ["photo", "contact", "education", "skills", "languages"],
+    "main": ["header", "summary", "experience", "courses"]
+  }
+}

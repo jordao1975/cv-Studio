@@ -2,6 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { renderCV } from '../components/CVRenderer';
 import '../components/CVRenderer.css';
+import TemplateEngine from '../templates/TemplateEngine';
+import template_1 from '../templates/cv_moderno.json';
+import template_2 from '../templates/cv_cronologico.json';
+import template_3 from '../templates/cv_funcional.json';
+import template_4 from '../templates/cv_criativo.json';
+import template_5 from '../templates/cv_academico.json';
+import template_6 from '../templates/cv_nao_tradicional.json';
+import template_7 from '../templates/cv_minimalista.json';
+import template_8 from '../templates/cv_infografico.json';
+import template_9 from '../templates/cv_hibrido.json';
+import template_10 from '../templates/cv_executivo.json';
+import template_11 from '../templates/cv_mocambicano.json';
+
+const jsonTemplates = {
+  1: template_1,
+  2: template_2,
+  3: template_3,
+  4: template_4,
+  5: template_5,
+  6: template_6,
+  7: template_7,
+  8: template_8,
+  9: template_9,
+  10: template_10,
+  11: template_11,
+};
+
 import html2pdf from 'html2pdf.js';
 import axios from 'axios';
 
@@ -448,15 +475,22 @@ const CVBuilder = () => {
                 onChange={e => setTemplate(Number(e.target.value))} 
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '4px 8px', fontSize: '12px', fontWeight: '700', borderRadius: '8px', cursor: 'pointer', maxWidth: '120px' }}
               >
-                <option value={1}>Clássico</option>
-                <option value={2}>Moderno</option>
-                <option value={3}>Elegante</option>
-                <option value={4}>Minimalista</option>
-                <option value={5}>Tech Teal</option>
-                <option value={6}>Editorial</option>
-                <option value={7}>Corporativo</option>
-                <option value={8}>Oficial</option>
-                {/* ... other options ignored for brevity in change, but kept in code ... */}
+                <option value={1}>Moderno</option>
+                <option value={2}>Cronológico Clássico</option>
+                <option value={3}>Funcional</option>
+                <option value={4}>Criativo</option>
+                <option value={5}>Académico</option>
+                <option value={6}>Não-Tradicional</option>
+                <option value={7}>Minimalista</option>
+                <option value={8}>Infográfico</option>
+                <option value={9}>Híbrido (Misto)</option>
+                <option value={10}>Executivo</option>
+                <option value={11}>Moçambicano Padrão (2024/25) ⭐</option>
+                <optgroup label="Legado">
+                  <option value={12}>Antigo 1</option>
+                  <option value={13}>Antigo 2</option>
+                  <option value={14}>Antigo 3</option>
+                </optgroup>
               </select>
               <select 
                 value={lang} 
@@ -514,8 +548,8 @@ const CVBuilder = () => {
         </div>
 
         {/* EDITOR AREA CENTRADO */}
-        <div className="mobile-editor-container" style={{ flex: 1, overflowY: 'auto', padding: '40px 24px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-          <div className="glass-panel mobile-editor-card" style={{ width: '100%', maxWidth: '1000px', padding: '40px 64px' }}>
+        <div className="flex-1 overflow-y-auto w-full flex justify-center items-start p-4 sm:p-6 lg:p-10">
+          <div className="glass-panel w-full max-w-[1000px] p-4 sm:p-8 lg:p-[40px_64px]">
 
             {activeTab === 'pessoais' && (
               <div>
@@ -540,24 +574,24 @@ const CVBuilder = () => {
                 <label style={labelStyle}>Cargo / Título</label>
                 <input type="text" value={data.title} onChange={e => setData({ ...data, title: e.target.value })} style={inputStyle} />
 
-                <div className="mobile-flex-col" style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex flex-col md:flex-row gap-2 md:gap-4">
                   <div style={{ flex: 1 }}><label style={labelStyle}>E-mail</label><input type="email" value={data.email} onChange={e => setData({ ...data, email: e.target.value })} style={inputStyle} /></div>
                   <div style={{ flex: 1 }}><label style={labelStyle}>Telefone</label><input type="text" value={data.phone} onChange={e => setData({ ...data, phone: e.target.value })} style={inputStyle} /></div>
                 </div>
 
-                <div className="mobile-flex-col" style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex flex-col md:flex-row gap-2 md:gap-4">
                   <div style={{ flex: 1 }}><label style={labelStyle}>Morada / Cidade</label><input type="text" value={data.location} onChange={e => setData({ ...data, location: e.target.value })} style={inputStyle} /></div>
                   <div style={{ flex: 1 }}><label style={labelStyle}>LinkedIn</label><input type="text" value={data.linkedin} onChange={e => setData({ ...data, linkedin: e.target.value })} style={inputStyle} /></div>
                 </div>
 
-                <div className="mobile-p-20" style={{ border: '2px dashed var(--border-strong)', padding: '20px', borderRadius: '12px', marginTop: '16px', background: 'var(--bg-surface)' }}>
+                <div className="border-2 border-dashed border-[var(--border-strong)] p-4 sm:p-5 rounded-xl mt-4 bg-[var(--bg-surface)]">
                   <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: '800' }}>Informações Adicionais (Documentos e Detalhes)</h4>
-                  <div className="mobile-grid-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div><label style={labelStyle}>Nacionalidade</label><input type="text" value={data.nacionalidade} onChange={e => setData({ ...data, nacionalidade: e.target.value })} style={inputStyle} /></div>
                     <div><label style={labelStyle}>Data Nascimento</label><input type="text" value={data.dataNascimento} onChange={e => setData({ ...data, dataNascimento: e.target.value })} style={inputStyle} /></div>
                     <div><label style={labelStyle}>Estado Civil</label><input type="text" value={data.estadoCivil} onChange={e => setData({ ...data, estadoCivil: e.target.value })} style={inputStyle} /></div>
                     <div><label style={labelStyle}>Nº de B.I.</label><input type="text" value={data.bi} onChange={e => setData({ ...data, bi: e.target.value })} style={inputStyle} /></div>
-                    <div><label style={labelStyle}>NUIT</label><input type="text" value={data.nuit} onChange={e => setData({ ...data, nuit: e.target.value })} style={inputStyle} /></div>
+                    <div className="sm:col-span-2"><label style={labelStyle}>NUIT</label><input type="text" value={data.nuit} onChange={e => setData({ ...data, nuit: e.target.value })} style={inputStyle} /></div>
                   </div>
                 </div>
               </div>
@@ -634,12 +668,12 @@ const CVBuilder = () => {
             {activeTab === 'idiomas' && (
               <div>
                 {data.languages.map(l => (
-                  <div key={l.id} className="mobile-flex-col" style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'flex-start' }}>
-                    <div className="mobile-full-width" style={{ flex: 1 }}><label style={labelStyle}>Idioma</label><input type="text" value={l.name} onChange={ev => updateLang(l.id, 'name', ev.target.value)} style={inputStyle} /></div>
-                    <div className="mobile-full-width" style={{ width: '130px' }}><label style={labelStyle}>Nível</label><select value={l.level} onChange={ev => updateLang(l.id, 'level', ev.target.value)} style={inputStyle}>
+                  <div key={l.id} className="flex flex-col sm:flex-row gap-2 mb-3 items-start sm:items-center">
+                    <div className="w-full sm:flex-1"><label style={labelStyle}>Idioma</label><input type="text" value={l.name} onChange={ev => updateLang(l.id, 'name', ev.target.value)} style={inputStyle} /></div>
+                    <div className="w-full sm:w-[130px]"><label style={labelStyle}>Nível</label><select value={l.level} onChange={ev => updateLang(l.id, 'level', ev.target.value)} style={inputStyle}>
                       {['Nativo', 'Fluente', 'Avançado', 'Intermediário', 'Básico'].map(lv => <option key={lv}>{lv}</option>)}
                     </select></div>
-                    <div style={{ paddingTop: '22px' }}><button onClick={() => removeLang(l.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '24px' }}>&times;</button></div>
+                    <div className="sm:pt-[22px]"><button onClick={() => removeLang(l.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '24px' }}>&times;</button></div>
                   </div>
                 ))}
                 <button onClick={addLang} style={addBtnStyle}>+ Adicionar Idioma</button>
@@ -662,10 +696,10 @@ const CVBuilder = () => {
             </div>
           </div>
 
-          <div className="mobile-flex-col" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
             
             {/* AI REVIEW PANEL (LEFT COL) */}
-            <div className="custom-scrollbar mobile-full-width" style={{ width: '400px', maxWidth: '100%', background: 'var(--bg-base)', borderRight: '1px solid var(--border-subtle)', overflowY: 'auto', padding: '32px' }}>
+            <div className="custom-scrollbar w-full lg:w-[400px] flex-shrink-0 bg-[var(--bg-base)] border-b lg:border-b-0 lg:border-r border-[var(--border-subtle)] overflow-y-auto p-6 lg:p-8">
               <div className="premium-card" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h4 className="outfit" style={{ fontSize: '18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -711,13 +745,18 @@ const CVBuilder = () => {
             </div>
 
             {/* PREVIEW PANEL (RIGHT COL) */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', justifyContent: 'center', background: 'var(--bg-surface)' }} onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
+            <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-10 flex justify-center bg-[var(--bg-surface)]" onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
               <div style={{ width: 'max-content' }}>
                 <div
                   ref={pdfRef}
                   style={{ width: '794px', minHeight: '1123px', background: '#fff', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', transition: 'transform 0.3s ease' }}
-                  dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }}
-                />
+                >
+                  {template <= 11 ? (
+                    <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
+                  ) : (
+                    <div dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }} />
+                  )}
+                </div>
               </div>
             </div>
 

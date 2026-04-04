@@ -54,76 +54,64 @@ const Dashboard = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+    <div className="flex flex-col gap-6 md:gap-8 lg:gap-10">
       
       {/* 1. WELCOME BANNER */}
-      <div className="banner-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)', padding: '32px', borderRadius: '24px', border: '1px solid var(--border-subtle)', position: 'relative', overflow: 'hidden' }}>
+      <div className="banner-content flex flex-col md:flex-row justify-between items-start md:items-center bg-[var(--bg-surface)] p-6 md:p-8 rounded-[24px] border border-[var(--border-subtle)] relative overflow-hidden gap-4 md:gap-0">
         <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: '150px', height: '150px', background: 'var(--accent-glow)', filter: 'blur(50px)', opacity: 0.5 }}></div>
         <div style={{ zIndex: 1 }}>
           <h1 className="outfit gradient-text" style={{ fontSize: '32px', margin: 0 }}>Olá, {user.name || 'Candidato'} 👋</h1>
           <p style={{ margin: '8px 0 0', fontWeight: '500' }}>O teu estúdio profissional está pronto para novas conquistas.</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/cv/new')} style={{ padding: '14px 24px', zIndex: 1 }}>
+        <button className="btn-primary w-full md:w-auto" onClick={() => navigate('/cv/new')} style={{ padding: '14px 24px', zIndex: 1 }}>
           <Plus size={20} /> Criar Novo Documento
         </button>
       </div>
 
-      <div className="bento-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         
         {/* 2. RECENT DOCUMENTS */}
-        <div className="premium-card bento-span-2" style={{ padding: '32px', height: 'fit-content' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h3 className="outfit" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="premium-card md:col-span-2 p-5 md:p-8 h-fit">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+            <h3 className="outfit flex items-center gap-2 m-0 text-lg sm:text-xl">
               <Clock size={20} className="gradient-text" /> Documentos Recentes
             </h3>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-              <input type="text" placeholder="Procurar..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '8px 12px 8px 36px', fontSize: '13px', outline: 'none', color: 'var(--text-primary)' }} />
+            <div className="relative w-full sm:w-auto">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+              <input type="text" placeholder="Procurar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full sm:w-auto bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-lg py-2 pl-9 pr-3 text-sm outline-none text-[var(--text-primary)]" />
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+              <div className="text-center p-10 text-[var(--text-tertiary)]">
                 A carregar os teus documentos...
               </div>
             ) : filteredDocs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📄</div>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>
+              <div className="text-center p-10">
+                <div className="text-5xl mb-3">📄</div>
+                <p className="text-[var(--text-tertiary)] text-sm">
                    {search ? 'Nada encontrado para essa busca.' : 'Ainda não tens documentos salvos.'}
                 </p>
               </div>
             ) : (
               filteredDocs.map(doc => (
                 <div key={`${doc.type}-${doc.id}`} 
-                  className="nav-link" 
+                  className="nav-link flex justify-between items-center bg-[var(--bg-base)] p-4 rounded-2xl cursor-pointer border border-[var(--border-subtle)] transition-all duration-200 mb-2 hover:bg-[rgba(99,102,241,0.05)]"
                   onClick={() => navigate(doc.type === 'cv' ? `/cv/${doc.id}` : `/letter/${doc.id}`)} 
-                  style={{ 
-                    background: 'var(--bg-base)', 
-                    padding: '16px 20px', 
-                    borderRadius: '16px', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    cursor: 'pointer', 
-                    border: '1px solid var(--border-subtle)', 
-                    transition: 'all 0.2s',
-                    marginBottom: '8px'
-                  }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '40px', height: '40px', background: 'var(--bg-surface)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: doc.type === 'cv' ? 'var(--accent-primary)' : '#0ea5e9', border: '1px solid var(--border-subtle)' }}>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[var(--bg-surface)] rounded-lg flex items-center justify-center border border-[var(--border-subtle)]" style={{ color: doc.type === 'cv' ? 'var(--accent-primary)' : '#0ea5e9' }}>
                       {doc.type === 'cv' ? <FileText size={20} /> : <Mail size={20} />}
                     </div>
-                    <div>
-                      <h4 className="outfit" style={{ fontSize: '15px', margin: 0, color: 'var(--text-primary)' }}>{doc.title || 'Sem Título'}</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{doc.type === 'cv' ? 'Currículo' : 'Carta de Apresentação'} • {new Date(doc.created_at).toLocaleDateString('pt-PT')}</p>
+                    <div className="overflow-hidden">
+                      <h4 className="outfit text-[15px] m-0 text-[var(--text-primary)] truncate">{doc.title || 'Sem Título'}</h4>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-1">{doc.type === 'cv' ? 'Currículo' : 'Carta de Apresentação'} • {new Date(doc.created_at).toLocaleDateString('pt-PT')}</p>
                     </div>
                   </div>
                   <button 
                     onClick={(e) => handleDelete(e, doc.id, doc.type)} 
-                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '10px', borderRadius: '10px' }}
+                    className="flex-shrink-0 bg-red-500/10 border-none text-red-500 cursor-pointer p-2.5 rounded-lg hover:bg-red-500/20 transition-colors"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -134,21 +122,21 @@ const Dashboard = () => {
         </div>
 
         {/* 3. QUICK TOOLS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="premium-card" onClick={() => navigate('/cover-letter')} style={{ padding: '24px', cursor: 'pointer' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+        <div className="flex flex-col gap-5">
+          <div className="premium-card p-6 cursor-pointer" onClick={() => navigate('/cover-letter')}>
+            <div className="w-12 h-12 rounded-xl bg-[rgba(56,189,248,0.1)] text-[#38bdf8] flex items-center justify-center mb-4">
               <Mail size={24} />
             </div>
-            <h3 className="outfit" style={{ fontSize: '18px', marginBottom: '8px' }}>Carta de Apresentação</h3>
-            <p style={{ fontSize: '13px', lineHeight: '1.5' }}>Gera cartas personalizadas com IA para cada candidatura.</p>
+            <h3 className="outfit text-lg mb-2">Carta de Apresentação</h3>
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">Gera cartas personalizadas com IA para cada candidatura.</p>
           </div>
 
-          <div className="premium-card" style={{ padding: '24px', opacity: 0.8 }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(244, 114, 182, 0.1)', color: '#f472b6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+          <div className="premium-card p-6 opacity-80">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(244,114,182,0.1)] text-[#f472b6] flex items-center justify-center mb-4">
               <Bot size={24} />
             </div>
-            <h3 className="outfit" style={{ fontSize: '18px', marginBottom: '8px' }}>Entrevista Guiada</h3>
-            <p style={{ fontSize: '13px', lineHeight: '1.5' }}>Deixa que a IA recolha os teus dados via chat. <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>(Brevemente)</span></p>
+            <h3 className="outfit text-lg mb-2">Entrevista Guiada</h3>
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">Deixa que a IA recolha os teus dados via chat. <span className="text-[var(--accent-primary)] font-bold">(Brevemente)</span></p>
           </div>
         </div>
 

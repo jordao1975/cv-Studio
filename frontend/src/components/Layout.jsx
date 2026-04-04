@@ -30,11 +30,14 @@ const Layout = ({ children }) => {
     <div className="app-shell">
       <aside className="sidebar">
         <div style={{ padding: '0 20px', marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '32px', height: '32px', background: 'var(--accent-gradient)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-              <Sparkles size={18} />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.png" className="theme-logo" alt="Curriculo Studio" style={{ height: '32px', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+            <div style={{ display: 'none', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', background: 'var(--accent-gradient)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                <Sparkles size={18} />
+              </div>
+              <span className="outfit" style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.5px' }}>Studio</span>
             </div>
-            <span className="outfit" style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.5px' }}>Studio</span>
           </div>
           
           <button 

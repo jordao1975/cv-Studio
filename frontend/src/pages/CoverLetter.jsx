@@ -95,7 +95,6 @@ const CoverLetter = () => {
 
           {/* LOGO */}
           <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontWeight: '900', fontSize: '28px', color: '#000' }}>
-            IA
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -113,11 +112,11 @@ const CoverLetter = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, justifyContent: 'center', gap: '40px', padding: '40px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      <div className="flex flex-col lg:flex-row flex-1 justify-center gap-6 lg:gap-10 p-4 sm:p-6 lg:p-10 max-w-[1400px] mx-auto w-full">
         
         {/* PARAMS */}
-        <div style={{ width: '400px', flexShrink: 0 }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '24px' }}>Parâmetros de Geração</h1>
+        <div className="w-full lg:w-[400px] flex-shrink-0">
+          <h1 className="text-2xl md:text-[28px] font-extrabold mb-6">Parâmetros de Geração</h1>
 
           <div style={cardStyle}>
             <label style={labelStyle}><UserCircle2 size={16} /> Perfil Profissional</label>
@@ -137,20 +136,20 @@ const CoverLetter = () => {
             <textarea value={jobDescription} onChange={e => setJobDescription(e.target.value)} style={{ ...inputStyle, height: '140px', resize: 'none' }} placeholder="Descreva a vaga..." />
           </div>
 
-          {error && <div style={{ color: '#ef4444', fontSize: '12px', marginBottom: '16px' }}>{error}</div>}
+          {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
 
-          <button onClick={handleGenerate} disabled={loading} style={{ width: '100%', padding: '16px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>
+          <button onClick={handleGenerate} disabled={loading} className="w-full p-4 bg-[var(--accent-primary)] hover:bg-indigo-600 text-white border-none rounded-xl font-bold text-[15px] cursor-pointer transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
             {loading ? 'Redigindo...' : 'Gerar Carta com IA'}
           </button>
         </div>
 
         {/* PAPER */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <div className="printable-document" style={{ background: '#fff', width: '100%', minHeight: '1000px', padding: '80px 100px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', position: 'relative' }}>
+        <div className="flex-1 flex justify-center w-full overflow-x-auto pb-8">
+          <div className="printable-document bg-white w-[800px] max-w-full min-h-[1000px] p-6 sm:p-10 lg:p-[80px_100px] rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.05)] relative flex-shrink-0">
             {!letterContent ? (
-              <div style={{ height: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                <Wand2 size={48} style={{ marginBottom: '24px', opacity: 0.2 }} />
-                <h2 style={{ fontSize: '24px', color: '#1e293b', fontWeight: '800' }}>Documento em Rascunho</h2>
+              <div className="h-[500px] lg:h-[800px] flex flex-col items-center justify-center text-slate-400">
+                <Wand2 size={48} className="mb-6 opacity-20" />
+                <h2 className="text-xl md:text-2xl text-slate-800 font-extrabold text-center px-4">Documento em Rascunho</h2>
               </div>
             ) : (
               <div style={{ lineHeight: '1.7', fontSize: '16px', fontFamily: '"Playfair Display", serif', color: '#1e293b' }}>
@@ -177,7 +176,7 @@ const CoverLetter = () => {
                  </div>
               </div>
             )}
-            {!letterContent && <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(3px)', zIndex: 0 }}></div>}
+            {!letterContent && <div className="absolute top-0 left-0 w-full h-full bg-white/70 backdrop-blur-[3px] z-0 rounded-lg"></div>}
           </div>
         </div>
       </div>

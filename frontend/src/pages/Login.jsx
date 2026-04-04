@@ -82,7 +82,8 @@ const Login = () => {
       <div className="glass-panel" style={{ padding: '48px', width: '100%', maxWidth: '440px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '20px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', marginBottom: '20px' }}>
+          <img src="/logo.png" className="theme-logo" alt="Curriculo Studio" style={{ height: '64px', objectFit: 'contain', marginBottom: '20px' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline-flex'; }} />
+          <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '20px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', marginBottom: '20px', margin: '0 auto' }}>
             <Sparkles size={32} />
           </div>
           <h1 className="outfit gradient-text" style={{ fontSize: '32px', marginBottom: '8px' }}>CurrículoStudio</h1>
