@@ -2,21 +2,40 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const { OAuth2Client } = require('google-auth-library');
-const multer = require('multer');
 const path = require('path');
-const { buildCVPrompt, buildCartaPrompt, buildChatPrompt, buildReviewPrompt, buildProfilePrompt } = require('./prompt');
+const rateLimit = require('express-rate-limit');
+const { buildCVPrompt, buildCartaPrompt, buildChatPrompt, buildReviewPrompt, buildProfilePrompt, buildImportPrompt } = require('./prompt');
 const { chamarIA } = require('./api');
 require('dotenv').config();
 
+const SALT_ROUNDS = 12;
 const app = express();
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.JWT_SECRET || 'cvstudio-super-secret-key-2024';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// === RATE LIMITERS ===
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per window
+  message: { error: 'Demasiadas tentativas de autenticação. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 AI requests per minute
+  message: { error: 'Limite de pedidos IA atingido. Aguarde um momento.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database setup
@@ -60,26 +79,54 @@ app.get('/', (req, res) => {
 });
 
 // ========== AUTH ROUTES ==========
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, name } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-  db.run('INSERT INTO users (email, name, password) VALUES (?, ?, ?)', [email, name || 'Utilizador', password], function(err) {
-    if (err) return res.status(500).json({ error: 'E-mail em uso.' });
-    const jwtToken = jwt.sign({ id: this.lastID, email }, SECRET_KEY, { expiresIn: '7d' });
-    res.json({ token: jwtToken, user: { id: this.lastID, email, name: name || 'Utilizador' } });
-  });
+app.post('/api/auth/register', authLimiter, async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+    if (password.length < 6) return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres.' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Formato de email inválido.' });
+
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    db.run('INSERT INTO users (email, name, password) VALUES (?, ?, ?)', [email, name || 'Utilizador', hashedPassword], function(err) {
+      if (err) return res.status(500).json({ error: 'E-mail já em uso.' });
+      const jwtToken = jwt.sign({ id: this.lastID, email }, SECRET_KEY, { expiresIn: '7d' });
+      res.json({ token: jwtToken, user: { id: this.lastID, email, name: name || 'Utilizador' } });
+    });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Erro interno ao criar conta.' });
+  }
 });
 
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  db.get('SELECT * FROM users WHERE email = ? AND password = ?', [email, password], (err, user) => {
-    if (err || !user) return res.status(401).json({ error: 'Credenciais inválidas' });
-    const jwtToken = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: '7d' });
-    res.json({ token: jwtToken, user });
-  });
+app.post('/api/auth/login', authLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+
+    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
+      if (err || !user) return res.status(401).json({ error: 'Credenciais inválidas.' });
+      
+      // If user has no hashed password (legacy plaintext), reject and force re-register
+      if (!user.password || user.password.length < 50) {
+        return res.status(401).json({ error: 'Conta necessita ser recriada por razões de segurança. Registe-se novamente.' });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) return res.status(401).json({ error: 'Credenciais inválidas.' });
+
+      const jwtToken = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: '7d' });
+      // Don't send password hash back to client
+      const { password: _, ...safeUser } = user;
+      res.json({ token: jwtToken, user: safeUser });
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Erro interno na autenticação.' });
+  }
 });
 
-app.post('/api/auth/google', async (req, res) => {
+app.post('/api/auth/google', authLimiter, async (req, res) => {
   const { token } = req.body;
   try {
     const ticket = await client.verifyIdToken({ idToken: token, audience: process.env.GOOGLE_CLIENT_ID });
@@ -177,7 +224,7 @@ app.get('/api/letters/:id', authenticate, (req, res) => {
 });
 
 // ========== AI ROUTES ==========
-app.post('/api/ai/review', authenticate, async (req, res) => {
+app.post('/api/ai/review', authenticate, aiLimiter, async (req, res) => {
   try {
     const { cvGerado } = req.body;
     const stringData = JSON.stringify(cvGerado, null, 2);
@@ -187,7 +234,7 @@ app.post('/api/ai/review', authenticate, async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.post('/api/ai/generate-cover-letter', authenticate, async (req, res) => {
+app.post('/api/ai/generate-cover-letter', authenticate, aiLimiter, async (req, res) => {
   try {
     const { dados, vaga, empresa } = req.body;
     console.log(`[AI] Generating Letter for: ${empresa || 'Candidatura'}`);
@@ -205,24 +252,20 @@ app.post('/api/ai/generate-cover-letter', authenticate, async (req, res) => {
   }
 });
 
-app.post('/api/ai/import', authenticate, async (req, res) => {
+app.post('/api/ai/import', authenticate, aiLimiter, async (req, res) => {
   try {
-    const { text, autoSummary } = req.body;
-    if (!text) return res.status(400).json({ error: 'Texto é obrigatório' });
-    const prompt = `Você é um perito em Recursos Humanos. Estruture este texto de CV em JSON estrito.
-${autoSummary ? 'Crie um resumo profissional de 3 frases no campo "summary".' : ''}
-ESTRUTURA: {
-  "name": "", "title": "", "email": "", "phone": "", "location": "", "linkedin": "", "summary": "",
-  "experiences": [{"role": "", "company": "", "period": "", "desc": ""}],
-  "educations": [{"degree": "", "institution": "", "period": ""}],
-  "courses": [{"name": "", "institution": "", "year": ""}],
-  "skills": [],
-  "languages": [{"name": "", "level": ""}]
-}
-TEXTO: ${text}`;
+    const { text, autoSummary, modelId } = req.body;
+    if (!text) return res.status(400).json({ error: 'Texto é obrigatório.' });
+    if (text.length > 50000) return res.status(400).json({ error: 'Texto demasiado longo (máx. 50.000 caracteres).' });
+    console.log(`[AI] Importing CV text (${text.length} chars) for model: ${modelId || 'moderno'}`);
+    const prompt = buildImportPrompt(text, autoSummary, modelId);
     const result = await chamarIA(prompt);
+    console.log(`[AI] Import Success — Name: ${result.name || '?'}`);
     res.json(result);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) {
+    console.error(`[AI ERROR] Import:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ========== START SERVER ==========

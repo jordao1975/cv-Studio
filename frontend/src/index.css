@@ -4,6 +4,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   /* LIGHT MODE PALETTE - Premium Clean */
   --bg-base: #f8fafc;
@@ -311,14 +315,7 @@ body {
   }
 }
 
-@media (max-width: 1024px) {
-  .sidebar {
-    display: none; /* Mobile will have a Drawer or Bottom Nav */
-  }
-  .main-content {
-    padding: 32px 20px;
-  }
-}
+
 
 h1, h2, h3, h4, .outfit {
   font-family: var(--font-heading);
@@ -329,6 +326,55 @@ h1 { font-size: 3rem; font-weight: 800; line-height: 1.1; margin-bottom: 0.5rem;
 h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
 h3 { font-size: 1.25rem; font-weight: 600; }
 p { line-height: 1.6; color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+}
+
+/* Hover scale micro-animation */
+.hover-scale {
+  transition: transform 0.2s var(--ease-in-out);
+}
+.hover-scale:hover {
+  transform: scale(1.1);
+}
+
+/* === KEYFRAME ANIMATIONS === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
 
 /* BENTO GRID UTILITY */
 .bento-grid {
@@ -352,49 +398,7 @@ p { line-height: 1.6; color: var(--text-secondary); }
   box-sizing: border-box;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
 
 /* === RESPONSIVE UTILITIES === */
 @media (max-width: 768px) {
@@ -444,6 +448,33 @@ code {
   }
   .mobile-mb-10 {
     margin-bottom: 10px !important;
+  }
+}
+
+/* === RESPONSIVE A4 PREVIEW (CV Builder & Cover Letter) === */
+.preview-scale-wrapper {
+  transform: scale(1);
+  transform-origin: top center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .preview-scale-wrapper { 
+    transform: scale(0.85); 
+    margin-bottom: -168px; /* Offset the lost height to avoid huge white gaps bottom */
+  }
+}
+@media (max-width: 768px) {
+  .preview-scale-wrapper { 
+    transform: scale(0.65); 
+    margin-bottom: -393px; 
+  }
+}
+@media (max-width: 480px) {
+  .preview-scale-wrapper { 
+    transform: scale(0.42); 
+    margin-bottom: -651px; 
   }
 }
 

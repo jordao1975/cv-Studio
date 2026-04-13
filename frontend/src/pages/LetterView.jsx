@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../utils/api';
 import { ChevronLeft, Download, FileText, Wand2 } from 'lucide-react';
 
 const LetterView = () => {
@@ -10,13 +10,12 @@ const LetterView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } });
+
 
   useEffect(() => {
     const fetchLetter = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/letters/${id}`, getAuthHeaders());
+        const res = await api.get(`/api/letters/${id}`);
         setLetter(res.data);
       } catch (err) {
         console.error('Falha ao carregar carta:', err);
@@ -31,28 +30,24 @@ const LetterView = () => {
   const handlePrint = () => window.print();
 
   return (
-    <div style={{ background: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#1e293b' }}>
+    <div style={{ background: 'var(--bg-base)', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: 'var(--text-primary)' }}>
       
       {/* HEADER */}
-      <div className="no-print" style={{ background: '#fff', height: '70px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 40px' }}>
+      <div className="no-print" style={{ background: 'var(--bg-surface)', minHeight: '60px', display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', position: 'sticky', top: 0, zIndex: 100, padding: '8px 0' }}>
+        <div className="flex flex-wrap items-center justify-between w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 gap-2">
           
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => navigate('/')} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-              <ChevronLeft size={16} /> Voltar ao Painel
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => navigate('/')} style={{ background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+              <ChevronLeft size={16} /> Voltar
             </button>
-            <div style={{ background: '#f8fafc', color: '#64748b', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <div className="hidden sm:flex" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
               <FileText size={16} /> Visualizador de Cartas
             </div>
           </div>
 
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontWeight: '900', fontSize: '28px', color: '#000' }}>
-            IA
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="flex gap-2">
              {letter && (
-               <button onClick={handlePrint} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <button onClick={handlePrint} className="btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
                  <Download size={16} /> Baixar PDF
                </button>
              )}
@@ -60,33 +55,33 @@ const LetterView = () => {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '60px 20px' }}>
+      <div className="flex-1 flex justify-center p-4 sm:p-6 lg:p-[60px_20px]">
         
         {loading ? (
-          <div style={{ color: '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '100px' }}>
+          <div style={{ color: 'var(--text-tertiary)', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '100px' }}>
             <Wand2 size={48} style={{ opacity: 0.5, marginBottom: '20px' }} />
             A carregar o documento...
           </div>
         ) : error ? (
-          <div style={{ color: '#ef4444', background: '#fee2e2', padding: '20px', borderRadius: '12px', height: 'fit-content' }}>
+          <div style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '20px', borderRadius: '12px', height: 'fit-content' }}>
             {error}
           </div>
         ) : letter ? (
-          <div className="printable-document" style={{ background: '#fff', width: '100%', maxWidth: '850px', minHeight: '1000px', padding: '80px 100px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+          <div className="printable-document" style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: '850px', minHeight: '1000px', padding: 'clamp(24px, 5vw, 80px) clamp(20px, 6vw, 100px)', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
               
-              <div style={{ lineHeight: '1.7', fontSize: '16px', fontFamily: '"Playfair Display", serif', color: '#1e293b' }}>
-                 <div style={{ marginBottom: '60px', borderBottom: '3px solid #000', paddingBottom: '30px' }}>
-                    <h1 style={{ margin: 0, fontSize: '38px', fontWeight: '900' }}>{letter.content.nome}</h1>
+              <div style={{ lineHeight: '1.7', fontSize: 'clamp(14px, 2vw, 16px)', fontFamily: '"Playfair Display", serif', color: 'var(--text-primary)' }}>
+                 <div style={{ marginBottom: '40px', borderBottom: '3px solid var(--text-primary)', paddingBottom: '20px' }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: '900' }}>{letter.content.nome}</h1>
                  </div>
                  
                  <p style={{ textAlign: 'right', marginBottom: '32px' }}>{new Date(letter.created_at).toLocaleDateString('pt-PT')}</p>
                  
                  <div style={{ marginBottom: '40px' }}>
                     <p style={{ fontWeight: 'bold', margin:0 }}>Departamento de Seleção</p>
-                    <p style={{ color: '#64748b', margin:0 }}>Empresa Destinatária</p>
+                    <p style={{ color: 'var(--text-secondary)', margin:0 }}>Empresa Destinatária</p>
                  </div>
                  
-                 <p style={{ fontWeight: '900', padding: '12px 16px', background: '#f8fafc', borderLeft: '4px solid #000', marginBottom: '32px' }}>
+                 <p style={{ fontWeight: '900', padding: '12px 16px', background: 'var(--bg-base)', borderLeft: '4px solid var(--text-primary)', marginBottom: '32px' }}>
                     ASSUNTO: {letter.content.assunto}
                  </p>
                  

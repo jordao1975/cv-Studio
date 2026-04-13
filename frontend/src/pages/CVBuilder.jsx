@@ -1,7 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { renderCV } from '../components/CVRenderer';
-import '../components/CVRenderer.css';
 import TemplateEngine from '../templates/TemplateEngine';
 import template_1 from '../templates/cv_moderno.json';
 import template_2 from '../templates/cv_cronologico.json';
@@ -14,165 +12,50 @@ import template_8 from '../templates/cv_infografico.json';
 import template_9 from '../templates/cv_hibrido.json';
 import template_10 from '../templates/cv_executivo.json';
 import template_11 from '../templates/cv_mocambicano.json';
+import useCVData from '../hooks/useCVData';
+import useAIImport from '../hooks/useAIImport';
 
 const jsonTemplates = {
-  1: template_1,
-  2: template_2,
-  3: template_3,
-  4: template_4,
-  5: template_5,
-  6: template_6,
-  7: template_7,
-  8: template_8,
-  9: template_9,
-  10: template_10,
-  11: template_11,
+  1: template_1, 2: template_2, 3: template_3, 4: template_4,
+  5: template_5, 6: template_6, 7: template_7, 8: template_8,
+  9: template_9, 10: template_10, 11: template_11,
 };
-
-import html2pdf from 'html2pdf.js';
-import axios from 'axios';
 
 const CVBuilder = () => {
   const navigate = useNavigate();
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  const getToken = () => sessionStorage.getItem('token');
-  const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${getToken()}` } });
-
   const { id } = useParams();
-  const [cvId, setCvId] = useState(null);
-
-  // Initialize data - will be overwritten by useEffect if needed
-  const [data, setData] = useState({
-      name: '', title: '', email: '', phone: '', location: '', linkedin: '',
-      nacionalidade: '', dataNascimento: '', estadoCivil: '', bi: '', nuit: '', photo: null,
-      summary: '',
-      experiences: [], educations: [], courses: [], languages: [], skills: []
-    });
-
-  const [template, setTemplate] = useState(1);
-  const [activeTab, setActiveTab] = useState('pessoais');
-  const [lang, setLang] = useState('pt');
-  const [showAiModal, setShowAiModal] = useState(false);
-  const [aiText, setAiText] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [useAi, setUseAi] = useState(true);
-  const [autoSummary, setAutoSummary] = useState(true);
-  const [skillInput, setSkillInput] = useState('');
-  const [theme, setTheme] = useState('dark');
-  const [showPreview, setShowPreview] = useState(false);
-  const [reviewData, setReviewData] = useState(null);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [alertMsg, setAlertMsg] = useState(null);
-  const [cvTitle, setCvTitle] = useState('Nome do Documento');
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'error'
   const pdfRef = useRef(null);
-  const saveTimerRef = useRef(null);
 
-  // Effect to handle navigation to a specific CV or starting a new one
-  useEffect(() => {
-    const fetchOrClear = async () => {
-      if (id === 'new' || !id) {
-        // RESET FOR NEW CV
-        setData({
-          name: '', title: '', email: '', phone: '', location: '', linkedin: '',
-          nacionalidade: '', dataNascimento: '', estadoCivil: '', bi: '', nuit: '', photo: null,
-          summary: '',
-          experiences: [], educations: [], courses: [], languages: [], skills: []
-        });
-        setCvId(null);
-        setCvTitle('Nome do Documento');
-        localStorage.removeItem('cv_data');
-        localStorage.removeItem('cv_current_id');
-        localStorage.removeItem('cv_current_title');
-      } else {
-        // FETCH EXISTING CV
-        try {
-          const res = await axios.get(`${BASE_URL}/api/cvs`, getAuthHeaders());
-          const found = res.data.find(c => String(c.id) === String(id));
-          if (found) {
-            setData(found.data);
-            setCvId(found.id);
-            setCvTitle(found.title);
-            setTemplate(found.template || 1);
-            setLang(found.lang || 'pt');
-          } else {
-            setAlertMsg("Documento não encontrado ou sem permissão.");
-            navigate('/');
-          }
-        } catch (err) {
-          console.error("Erro ao carregar CV:", err);
-        }
-      }
-    };
-    fetchOrClear();
-  }, [id]);
+  // ── Core CV State (via hook) ──
+  const cv = useCVData(id);
+  const {
+    data, setData, cvTitle, setCvTitle,
+    template, setTemplate, lang, setLang,
+    saveStatus, alertMsg, setAlertMsg,
+    handleManualSave, handlePhotoUpload,
+    addExp, updateExp, removeExp,
+    addEdu, updateEdu, removeEdu,
+    addCourse, updateCourse, removeCourse,
+    addLang, updateLang, removeLang,
+    addSkill, removeSkill,
+  } = cv;
 
-  const handleManualSave = async () => {
-    setSaveStatus('saving');
-    try {
-      const cvToSave = { ...data };
-      delete cvToSave.photo;
-      const titleToSave = cvTitle || (data.name ? `CV - ${data.name}` : 'CV Sem Título');
+  // ── AI Import (via hook) ──
+  const ai = useAIImport({ data, setData, template, setAlertMsg });
+  const {
+    showAiModal, setShowAiModal,
+    aiText, setAiText, aiLoading, useAi, setUseAi,
+    autoSummary, setAutoSummary,
+    showPreview, setShowPreview,
+    reviewData, reviewLoading,
+    handleAiReview, handleAiImport, handleLocalImport, handleFileImport,
+  } = ai;
 
-      if (cvId) {
-        await axios.put(`${BASE_URL}/api/cvs/${cvId}`, { title: titleToSave, data: cvToSave }, getAuthHeaders());
-      } else {
-        const res = await axios.post(`${BASE_URL}/api/cvs`, { title: titleToSave, data: cvToSave }, getAuthHeaders());
-        setCvId(res.data.id);
-        navigate(`/cv/${res.data.id}`, { replace: true });
-      }
-      setSaveStatus('saved');
-    } catch (err) {
-      console.error('Save failed:', err);
-      setSaveStatus('error');
-    }
-  };
+  // ── Local UI State ──
+  const [activeTab, setActiveTab] = useState('pessoais');
+  const [skillInput, setSkillInput] = useState('');
 
-  // Save to localStorage (Local Persistence)
-  useEffect(() => {
-    if (data.name || data.email || data.summary || data.experiences.length > 0) {
-      localStorage.setItem('cv_data', JSON.stringify(data));
-      localStorage.setItem('cv_template', template);
-      localStorage.setItem('cv_lang', lang);
-      localStorage.setItem('cv_theme', theme);
-      localStorage.setItem('cv_current_title', cvTitle);
-      if (cvId) localStorage.setItem('cv_current_id', cvId);
-    }
-  }, [data, template, lang, theme, cvTitle, cvId]);
-
-  // Auto-save to database (debounced)
-  useEffect(() => {
-    const token = getToken();
-    if (!token || token === 'local-jwt-token') return;
-    if (!data.name && !data.summary && data.experiences.length === 0) return; // Don't autosave empty
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        const cvToSave = { ...data };
-        delete cvToSave.photo;
-        const titleToSave = cvTitle === 'Nome do Documento' && data.name ? `CV - ${data.name}` : cvTitle;
-
-        setSaveStatus('saving');
-        if (cvId) {
-          await axios.put(`${BASE_URL}/api/cvs/${cvId}`, { title: titleToSave, data: cvToSave }, getAuthHeaders());
-        } else {
-          const res = await axios.post(`${BASE_URL}/api/cvs`, { title: titleToSave, data: cvToSave }, getAuthHeaders());
-          setCvId(res.data.id);
-          navigate(`/cv/${res.data.id}`, { replace: true });
-        }
-        setSaveStatus('saved');
-      } catch (err) {
-        setSaveStatus('error');
-        console.warn('Auto-save falhou:', err.message);
-      }
-    }, 3000);
-
-    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [data]);
-
-  // Using new universal variables
+  // ── Shared Styles ──
   const inputStyle = { width: '100%', padding: '12px 16px', marginBottom: '14px', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' };
   const labelStyle = { display: 'block', fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700' };
   const cardStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '24px', borderRadius: '16px', marginBottom: '16px', position: 'relative', boxShadow: 'var(--shadow-sm)' };
@@ -184,231 +67,11 @@ const CVBuilder = () => {
     window.print();
   };
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = ev => setData({ ...data, photo: ev.target.result });
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAiReview = async () => {
-    setShowPreview(true);
-    if (!reviewData) {
-      setReviewLoading(true);
-      try {
-        const token = getToken();
-        if (!token || token === 'local-jwt-token') {
-          setAlertMsg('Sessão inválida. Faça logout e login novamente para usar a auditoria de IA.');
-          setReviewLoading(false);
-          return;
-        }
-        const cvToReview = { ...data };
-        delete cvToReview.photo;
-        const res = await axios.post(`${BASE_URL}/api/ai/review`, { cvGerado: cvToReview }, getAuthHeaders());
-        setReviewData(res.data);
-      } catch (err) {
-        console.error(err);
-        if (err.response && err.response.status === 401) {
-          setAlertMsg('Sessão expirada ou inválida (401). Faça logout (Sair) e entre novamente com email e senha para corrigir.');
-        } else {
-          setAlertMsg('Falha ao obter conselhos de IA. Verifique se o backend está ligado.');
-        }
-      } finally {
-        setReviewLoading(false);
-      }
-    }
-  };
-
-  const handleLocalImport = () => {
-    setAiLoading(true);
-    try {
-      const text = aiText;
-      const extracted = {
-        name: '', title: '', email: '', phone: '', summary: '',
-        experiences: [], educations: [], courses: [], languages: [], skills: []
-      };
-
-      // 1. Email e Telefone (Regex)
-      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      if (emailMatch) extracted.email = emailMatch[0];
-
-      const phoneMatch = text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/);
-      if (phoneMatch) extracted.phone = phoneMatch[0];
-
-      // 2. Nome e Cargo: Presumir as primeiras linhas
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length > 0) extracted.name = lines[0].substring(0, 50);
-      if (lines.length > 1 && !lines[1].includes('@') && lines[1].length < 60) {
-        extracted.title = lines[1];
-      }
-
-      // 3. Captura Grosseira de Blocos
-      const lower = text.toLowerCase();
-      const getBlock = (startWords, endWords) => {
-        let startIdx = -1;
-        for (const w of startWords) {
-          startIdx = lower.indexOf(w);
-          if (startIdx !== -1) break;
-        }
-        if (startIdx === -1) return '';
-        let endIdx = text.length;
-        for (const w of endWords) {
-          const idx = lower.indexOf(w, startIdx + 15);
-          if (idx !== -1 && idx < endIdx) endIdx = idx;
-        }
-        return text.substring(startIdx, endIdx).split('\n').slice(1).join('\n').trim();
-      };
-
-      const expText = getBlock(['experiência', 'experiencia', 'histórico profissional', 'experience'], ['formação', 'educação', 'cursos', 'competências', 'idiomas']);
-      if (expText) {
-        extracted.experiences.push({ id: Date.now(), role: 'Rever Cargo', company: '', period: '', desc: expText.substring(0, 600) });
-      }
-
-      const eduText = getBlock(['formação', 'formacao', 'educação', 'habilitações'], ['experiência', 'cursos', 'competências', 'idiomas']);
-      if (eduText) {
-        extracted.educations.push({ id: Date.now(), degree: 'Rever Formação', institution: eduText.substring(0, 80), period: '' });
-      }
-
-      const skillsText = getBlock(['competências', 'competencias', 'skills', 'qualificações'], ['idiomas', 'cursos', 'experiência']);
-      if (skillsText) {
-        extracted.skills = skillsText.split(/,|\n/).map(s => s.trim()).filter(s => s.length > 2 && s.length < 35).slice(0, 8);
-      }
-
-      extracted.summary = "Dados extraídos localmente com sucesso. Por favor, reveja e edite cada campo para garantir a máxima precisão.";
-
-      // Mesclar e manter o que já exista
-      setData(prev => ({ ...prev, ...extracted }));
-      setShowAiModal(false);
-      setAlertMsg('Importação Offline concluída! \nComo este modo não usa Inteligência Artificial, a organização final depende de revisão manual.');
-    } catch (err) {
-      setAlertMsg("Erro ao processar o texto localmente.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const transformAiData = (rawJson, currentState) => {
-    const addIds = (arr) => (Array.isArray(arr) ? arr.map((item, i) => ({ ...item, id: Date.now() + i })) : []);
-    
-    // ARCHITECT PATTERN: Null-safe merging with priority on extracted data
-    // Fallback to currentState to ensure NO DATA LOSS on fields the AI missed
-    return {
-      name: rawJson.name || currentState.name,
-      title: rawJson.title || currentState.title,
-      email: rawJson.email || currentState.email,
-      phone: rawJson.phone || currentState.phone,
-      location: rawJson.location || currentState.location,
-      linkedin: rawJson.linkedin || currentState.linkedin,
-      summary: rawJson.summary || currentState.summary,
-      experiences: Array.isArray(rawJson.experiences) && rawJson.experiences.length ? addIds(rawJson.experiences) : currentState.experiences,
-      educations: Array.isArray(rawJson.educations) && rawJson.educations.length ? addIds(rawJson.educations) : currentState.educations,
-      courses: Array.isArray(rawJson.courses) && rawJson.courses.length ? addIds(rawJson.courses) : currentState.courses,
-      languages: Array.isArray(rawJson.languages) && rawJson.languages.length ? addIds(rawJson.languages) : currentState.languages,
-      skills: Array.isArray(rawJson.skills) && rawJson.skills.length ? rawJson.skills : currentState.skills,
-    };
-  };
-
-  const handleAiImport = async () => {
-    if (!aiText || aiText.length < 20) {
-      setAlertMsg("Por favor, cole o texto do currículo para uma extração precisa.");
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const response = await axios.post(`${BASE_URL}/api/ai/import`, { 
-        text: aiText, 
-        autoSummary 
-      }, getAuthHeaders());
-
-      const parsed = response.data;
-      if (!parsed) throw new Error("A IA comunicou com sucesso, mas não encontrou dados válidos.");
-
-      setData(prev => {
-        const merged = transformAiData(parsed, prev);
-        // Persist immediately to prevent loss during re-render
-        localStorage.setItem('cv_data', JSON.stringify(merged));
-        return merged;
-      });
-
-      setShowAiModal(false);
-      setAiText('');
-      setAlertMsg('✨ Importação IA concluída! Os seus dados foram organizados nas respetivas secções.');
-    } catch (err) {
-      console.error('AI Import Error:', err);
-      const msg = err.response?.data?.error || err.message;
-      setAlertMsg(`Erro no processamento IA: ${msg}`);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-
-  const handleFileImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setAiLoading(true);
-    setAiLoading(true);
-    setAiText('⏳ A ler o ficheiro... por favor aguarde.');
-
-    try {
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map(s => s.str).join(' ') + '\n';
-        }
-        if (!text.trim()) throw new Error("Não foi possível extrair texto deste PDF (pode ser uma imagem).");
-        setAiText(text);
-      } else if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await window.mammoth.extractRawText({ arrayBuffer });
-        if (!result.value.trim()) throw new Error("Não foi possível extrair texto deste documento Word.");
-        setAiText(result.value);
-      } else {
-        setAlertMsg("Formato não suportado. Utilize um ficheiro PDF ou Word (.docx).");
-        setAiText('');
-      }
-    } catch (err) {
-      console.error('File Read Error:', err);
-      setAlertMsg(`Erro ao ler o ficheiro: ${err.message}`);
-      setAiText('');
-    } finally {
-      setAiLoading(false);
-      e.target.value = ''; // Reset input to allow re-upload of same file
-    }
-  };
-
-  // ARR MGT
-  const addExp = () => setData(p => ({ ...p, experiences: [...p.experiences, { id: Date.now(), role: '', company: '', period: '', desc: '' }] }));
-  const updateExp = (id, key, val) => setData(p => ({ ...p, experiences: p.experiences.map(x => x.id === id ? { ...x, [key]: val } : x) }));
-  const removeExp = id => setData(p => ({ ...p, experiences: p.experiences.filter(x => x.id !== id) }));
-
-  const addEdu = () => setData(p => ({ ...p, educations: [...p.educations, { id: Date.now(), degree: '', institution: '', period: '' }] }));
-  const updateEdu = (id, key, val) => setData(p => ({ ...p, educations: p.educations.map(x => x.id === id ? { ...x, [key]: val } : x) }));
-  const removeEdu = id => setData(p => ({ ...p, educations: p.educations.filter(x => x.id !== id) }));
-
-  const addCourse = () => setData(p => ({ ...p, courses: [...p.courses, { id: Date.now(), name: '', institution: '', year: '' }] }));
-  const updateCourse = (id, key, val) => setData(p => ({ ...p, courses: p.courses.map(x => x.id === id ? { ...x, [key]: val } : x) }));
-  const removeCourse = id => setData(p => ({ ...p, courses: p.courses.filter(x => x.id !== id) }));
-
-  const addLang = () => setData(p => ({ ...p, languages: [...p.languages, { id: Date.now(), name: '', level: 'Nativo' }] }));
-  const updateLang = (id, key, val) => setData(p => ({ ...p, languages: p.languages.map(x => x.id === id ? { ...x, [key]: val } : x) }));
-  const removeLang = id => setData(p => ({ ...p, languages: p.languages.filter(x => x.id !== id) }));
-
-  const addSkill = () => {
-    if (!skillInput.trim()) return;
-    const items = skillInput.split(',').map(s => s.trim()).filter(Boolean);
-    setData(p => ({ ...p, skills: [...p.skills, ...items] }));
+  const handleAddSkill = () => {
+    addSkill(skillInput);
     setSkillInput('');
   };
-  const removeSkill = i => setData(p => { const newSkills = [...p.skills]; newSkills.splice(i, 1); return { ...p, skills: newSkills } });
+
 
   return (
     <div className="cv-builder-root" style={{ display: 'flex', height: '100vh', background: 'var(--bg-base)', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }}>
@@ -431,16 +94,16 @@ const CVBuilder = () => {
         }}>
           
           {/* THE MASTER PILL */}
-          <div style={{ 
+          <div className="mobile-header-toolbar flex-wrap justify-center" style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '12px', 
             background: 'var(--bg-base)', 
-            padding: '6px 12px', 
+            padding: '8px 16px', 
             borderRadius: '20px', 
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-lg)',
-            maxWidth: '1200px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+            maxWidth: '100%',
             width: 'fit-content'
           }}>
             
@@ -486,11 +149,6 @@ const CVBuilder = () => {
                 <option value={9}>Híbrido (Misto)</option>
                 <option value={10}>Executivo</option>
                 <option value={11}>Moçambicano Padrão (2024/25) ⭐</option>
-                <optgroup label="Legado">
-                  <option value={12}>Antigo 1</option>
-                  <option value={13}>Antigo 2</option>
-                  <option value={14}>Antigo 3</option>
-                </optgroup>
               </select>
               <select 
                 value={lang} 
@@ -505,7 +163,7 @@ const CVBuilder = () => {
             <div style={{ width: '1px', height: '16px', background: 'var(--border-subtle)' }}></div>
 
             {/* Actions Group (Compact) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}>
               <button 
                 onClick={handleManualSave} 
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 'bold' }}
@@ -652,8 +310,8 @@ const CVBuilder = () => {
               <div>
                 <label style={labelStyle}>Adicionar Competências (Pressione Enter ou use ,)</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                  <input type="text" value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill() } }} style={{ ...inputStyle, marginBottom: 0 }} placeholder="Redes, Gestão..." />
-                  <button onClick={addSkill} style={{ background: 'var(--border-strong)', color: 'var(--text-primary)', border: 'none', borderRadius: '10px', padding: '0 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px' }}>+</button>
+                  <input type="text" value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); handleAddSkill() } }} style={{ ...inputStyle, marginBottom: 0 }} placeholder="Redes, Gestão..." />
+                  <button onClick={handleAddSkill} style={{ background: 'var(--border-strong)', color: 'var(--text-primary)', border: 'none', borderRadius: '10px', padding: '0 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px' }}>+</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                   {data.skills.map((s, i) => (
@@ -696,10 +354,10 @@ const CVBuilder = () => {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
             
             {/* AI REVIEW PANEL (LEFT COL) */}
-            <div className="custom-scrollbar w-full lg:w-[400px] flex-shrink-0 bg-[var(--bg-base)] border-b lg:border-b-0 lg:border-r border-[var(--border-subtle)] overflow-y-auto p-6 lg:p-8">
+            <div className="custom-scrollbar w-full lg:w-[400px] flex-shrink-0 flex-grow-0 bg-[var(--bg-base)] border-b lg:border-b-0 lg:border-r border-[var(--border-subtle)] lg:overflow-y-auto p-6 lg:p-8" style={{ maxHeight: '100%' }}>
               <div className="premium-card" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h4 className="outfit" style={{ fontSize: '18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -745,17 +403,15 @@ const CVBuilder = () => {
             </div>
 
             {/* PREVIEW PANEL (RIGHT COL) */}
-            <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-10 flex justify-center bg-[var(--bg-surface)]" onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
-              <div style={{ width: 'max-content' }}>
+            <div className="flex-1 lg:overflow-y-auto p-4 sm:p-10 flex justify-center bg-[var(--bg-surface)]" onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
+              <div className="preview-scale-wrapper" style={{ width: '794px', height: '1123px', flexShrink: 0 }}>
                 <div
                   ref={pdfRef}
-                  style={{ width: '794px', minHeight: '1123px', background: '#fff', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', transition: 'transform 0.3s ease' }}
+                  id="print-area"
+                  className="printable-document"
+                  style={{ width: '794px', minHeight: '1123px', background: '#fff', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
                 >
-                  {template <= 11 ? (
-                    <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
-                  ) : (
-                    <div dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }} />
-                  )}
+                  <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
                 </div>
               </div>
             </div>
@@ -808,9 +464,9 @@ const CVBuilder = () => {
               style={{ 
                 width: '100%', 
                 height: '140px', 
-                background: 'rgba(255,255,255,0.05)', 
+                background: 'var(--bg-base)', 
                 border: `1px solid var(--border-strong)`, 
-                color: '#fff', // Explicit white text for dark mode
+                color: 'var(--text-primary)',
                 padding: '16px', 
                 borderRadius: '12px', 
                 outline: 'none', 
@@ -847,11 +503,9 @@ const CVBuilder = () => {
       )}
 
       {/* HIDDEN PRINT CONTAINER - ALWAYS RENDERED FOR WINDOW.PRINT TO WORK */}
-      <div
-        id="print-area"
-        style={{ display: 'none' }}
-        dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }}
-      />
+      <div id="print-area" style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px', minHeight: '1123px', background: '#fff' }}>
+        <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
+      </div>
     </div>
   );
 };

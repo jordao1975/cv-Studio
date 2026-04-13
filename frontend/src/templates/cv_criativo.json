@@ -1,29 +1,45 @@
 {
-  "id": "criativo",
-  "name": "Criativo (Curvo)",
-  "layout": {
-    "type": "two-column",
-    "geometry": "curve-header",
-    "sidebarPosition": "left",
-    "sidebarWidth": "30%"
-  },
-  "theme": {
-    "colors": {
-      "primary": "#6b21a8",
-      "textMain": "#334155",
-      "sidebarBg": "transparent",
-      "sidebarText": "#475569",
-      "sidebarTitle": "#6b21a8"
+    "id": "criativo",
+    "name": "Criativo (Curvo)",
+    "layout": {
+        "type": "two-column",
+        "geometry": "curve-header",
+        "sidebarPosition": "left",
+        "sidebarWidth": "38%"
     },
-    "font": "'Poppins', sans-serif"
-  },
-  "variants": {
-    "headings": "pill",
-    "contact": "inline",
-    "photo": "floating"
-  },
-  "structure": {
-    "sidebar": ["contact", "languages", "skills"],
-    "main": ["photo", "header", "summary", "experience", "education"]
-  }
+    "theme": {
+        "colors": {
+            "primary": "#0f766e",
+            "textMain": "#111827",
+            "sidebarBg": "#134e4a",
+            "sidebarText": "#ccfbf1",
+            "sidebarTitle": "#ffffff",
+            "photoBorder": "#ffffff"
+        },
+        "font": "'Outfit', sans-serif"
+    },
+    "variants": {
+        "headings": "bold-line",
+        "contact": "default",
+        "photo": "floating",
+        "skills": "text",
+        "languages": "text",
+        "experience": "timeline",
+        "education": "timeline"
+    },
+    "structure": {
+        "sidebar": [
+            "header",
+            "photo",
+            "education",
+            "courses",
+            "languages"
+        ],
+        "main": [
+            "contact",
+            "summary",
+            "experience",
+            "skills"
+        ]
+    }
 }
