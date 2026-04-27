@@ -1,25 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import TemplateEngine from '../templates/TemplateEngine';
-import template_1 from '../templates/cv_moderno.json';
-import template_2 from '../templates/cv_cronologico.json';
-import template_3 from '../templates/cv_funcional.json';
-import template_4 from '../templates/cv_criativo.json';
-import template_5 from '../templates/cv_academico.json';
-import template_6 from '../templates/cv_nao_tradicional.json';
-import template_7 from '../templates/cv_minimalista.json';
-import template_8 from '../templates/cv_infografico.json';
-import template_9 from '../templates/cv_hibrido.json';
-import template_10 from '../templates/cv_executivo.json';
-import template_11 from '../templates/cv_mocambicano.json';
+import { renderCV } from '../components/CVRenderer';
+import '../components/CVRenderer.css';
+import '../components/CVRenderer_append.css';
 import useCVData from '../hooks/useCVData';
 import useAIImport from '../hooks/useAIImport';
 
-const jsonTemplates = {
-  1: template_1, 2: template_2, 3: template_3, 4: template_4,
-  5: template_5, 6: template_6, 7: template_7, 8: template_8,
-  9: template_9, 10: template_10, 11: template_11,
-};
+
 
 const CVBuilder = () => {
   const navigate = useNavigate();
@@ -410,9 +397,8 @@ const CVBuilder = () => {
                   id="print-area"
                   className="printable-document"
                   style={{ width: '794px', minHeight: '1123px', background: '#fff', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-                >
-                  <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
-                </div>
+                  dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }}
+                />
               </div>
             </div>
 
@@ -503,9 +489,7 @@ const CVBuilder = () => {
       )}
 
       {/* HIDDEN PRINT CONTAINER - ALWAYS RENDERED FOR WINDOW.PRINT TO WORK */}
-      <div id="print-area" style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px', minHeight: '1123px', background: '#fff' }}>
-        <TemplateEngine templateId={template} templateConfig={jsonTemplates[template]} data={data} lang={lang} />
-      </div>
+      <div id="print-area" style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px', minHeight: '1123px', background: '#fff' }} dangerouslySetInnerHTML={{ __html: renderCV(template, data, lang) }} />
     </div>
   );
 };
