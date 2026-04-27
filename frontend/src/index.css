@@ -486,18 +486,17 @@ p { line-height: 1.6; color: var(--text-secondary); }
     print-color-adjust: exact !important;
   }
 
-  /* NUCLEAR: Hide absolutely everything that is not the print area */
+  /* NUCLEAR: Hide app UI elements that are NOT part of the CV content */
   body > *:not(#root),
   .sidebar,
   .bottom-nav,
   nav.bottom-nav,
   aside.sidebar,
-  aside,
+  .app-shell > aside.sidebar,
   .mobile-main-wrapper,
   .mobile-preview-overlay,
   .mobile-import-overlay,
   .cv-builder-root > *:not(#print-area),
-  .app-shell > aside,
   .app-shell > nav,
   .app-shell > .main-content > * > .mobile-main-wrapper {
     display: none !important;
@@ -533,6 +532,27 @@ p { line-height: 1.6; color: var(--text-secondary); }
     left: auto !important;
     margin: 0;
     padding: 0;
+    overflow: visible !important;
+  }
+
+  /* PRESERVE CV template layouts inside print area */
+  #print-area .cv-wrap,
+  #print-area .t3-wrap,
+  #print-area .t9-wrap,
+  #print-area .t10-wrap,
+  #print-area .t11-wrap,
+  #print-area .t12-wrap,
+  #print-area .t13-wrap {
+    display: flex !important;
+  }
+
+  #print-area aside {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    left: auto !important;
+    height: auto !important;
+    width: auto !important;
     overflow: visible !important;
   }
 
